@@ -2,9 +2,8 @@ import React, { useEffect } from 'react';
 import { I18nManager } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import RNRestart from 'react-native-restart'; // برای اعمال راست‌چین نیاز به ری‌استارت اپلیکیشن است
 
-// وارد کردن فایل‌های خودتان (مسیرها را در صورت نیاز بررسی کنید)
+// وارد کردن فایل‌های خودتان
 import HomeScreen from './src/screens/HomeScreen';
 import FolderScreen from './src/screens/FolderScreen';
 import { TodoProvider } from './src/context/TodoContext';
@@ -18,8 +17,7 @@ export default function App() {
     if (!I18nManager.isRTL) {
       I18nManager.allowRTL(true);
       I18nManager.forceRTL(true);
-      // این دستور اپلیکیشن را یک بار ری‌استارت می‌کند تا چینش راست‌به‌چپ اعمال شود
-      RNRestart.restart(); 
+      // اعمال راست‌چین. کاربر برای دیدن تغییرات فقط کافیست برنامه را یک بار ببندد و باز کند.
     }
   }, []);
 
