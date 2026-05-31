@@ -13,14 +13,10 @@ workflows:
       - name: Install npm dependencies
         script: | 
           npm install --legacy-peer-deps
-      - name: Fix Settings & Build Android APK
+      - name: Build Android APK
         script: | 
-          # 1. حل مشکل متغیر خالی در فایل مانیفست
           sed -i '' 's/\${usesCleartextTraffic}/true/g' android/app/src/main/AndroidManifest.xml || true
-          
-          # 2. خاموش کردن معماری جدید (New Architecture) برای رفع خطای کاتلین در افزونه‌ها
           echo "newArchEnabled=false" >> android/gradle.properties
-          
           cd android
           chmod +x ./gradlew
           ./gradlew assembleRelease
