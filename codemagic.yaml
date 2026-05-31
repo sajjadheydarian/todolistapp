@@ -13,8 +13,9 @@ workflows:
       - name: Install npm dependencies
         script: | 
           npm install --legacy-peer-deps
-          # نصب اجباری نسخه جدید پلاگین برای حل تمام خطاهای گریدل
           npm install @react-native/gradle-plugin@0.75.4 --no-save
+          # این خط برای رفع خطای Metro اضافه شده است
+          npm install @react-native/metro-config --no-save
       - name: Build Android APK
         script: | 
           cd android
