@@ -13,7 +13,8 @@ workflows:
       - name: Install npm dependencies
         script: | 
           npm install --legacy-peer-deps
-          npm install @react-native/metro-config@0.75.4 @react-native/babel-preset@0.75.4 --save-dev --legacy-peer-deps
+          # ارتقا به نسخه ۰.۷۶.۵ برای هماهنگی کامل با کدهای اندروید شما
+          npm install @react-native/metro-config@0.76.5 @react-native/babel-preset@0.76.5 --save-dev --legacy-peer-deps
           npm uninstall metro-react-native-babel-preset || true
           npm install react-native-safe-area-context@4.14.1 react-native-gesture-handler@2.21.2 react-native-screens@3.35.0 --legacy-peer-deps
           
@@ -24,21 +25,18 @@ workflows:
           
       - name: Ultimate Android Version & Manifest Fix
         script: |
-          # 1. قفل کردن نسخه اندروید روی 34 (کاملاً پایدار) و کاتلین روی 1.9.24
           node -e "
           const fs=require('fs'); 
           const bg='android/build.gradle';
           if(fs.existsSync(bg)){
             let c=fs.readFileSync(bg,'utf8');
-            c=c.replace(/compileSdkVersion\s*=\s*\d+/g, 'compileSdkVersion = 34');
-            c=c.replace(/targetSdkVersion\s*=\s*\d+/g, 'targetSdkVersion = 34');
-            c=c.replace(/compileSdk\s*=\s*\d+/g, 'compileSdk = 34');
-            c=c.replace(/targetSdk\s*=\s*\d+/g, 'targetSdk = 34');
+            c=c.replace(/compileSdkVersion\s*=\s*\d+/g, 'compileSdkVersion = 35');
+            c=c.replace(/targetSdkVersion\s*=\s*\d+/g, 'targetSdkVersion = 35');
+            c=c.replace(/compileSdk\s*=\s*\d+/g, 'compileSdk = 35');
+            c=c.replace(/targetSdk\s*=\s*\d+/g, 'targetSdk = 35');
             c=c.replace(/kotlinVersion\s*=\s*['\"][^'\"]+['\"]/g, \"kotlinVersion = '1.9.24'\");
             fs.writeFileSync(bg,c);
           }"
-          
-          # 2. حل خطای مانیفست
           sed -i '' 's/\${usesCleartextTraffic}/true/g' android/app/src/main/AndroidManifest.xml || true
           
       - name: Build Android APK
