@@ -13,14 +13,16 @@ workflows:
       - name: Install npm dependencies
         script: | 
           npm install --legacy-peer-deps
-          # نصب ابزارهای جدید و حذف ابزار قدیمی برای جلوگیری از تداخل
           npm install @react-native/metro-config@0.75.4 @react-native/babel-preset@0.75.4 --save-dev
           npm uninstall metro-react-native-babel-preset
       - name: Auto-Fix Config Files
         script: |
-          # بازنویسی خودکار تنظیمات بابل و مترو با استاندارد نسخه 0.75
           echo "module.exports = { presets: ['module:@react-native/babel-preset'] };" > babel.config.js
           echo "const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config'); module.exports = mergeConfig(getDefaultConfig(__dirname), {});" > metro.config.js
+      - name: Bump Android Gradle Plugin
+        script: |
+          # ارتقای خودکار پلاگین اندروید از 8.5.0 به 8.6.1 برای حل خطای AndroidX
+          sed -i '' 's/8.5.0/8.6.1/g' android/build.gradle android/settings.gradle || true
       - name: Build Android APK
         script: | 
           cd android
