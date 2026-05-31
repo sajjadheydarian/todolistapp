@@ -13,6 +13,8 @@ workflows:
       - name: Install npm dependencies
         script: | 
           npm install --legacy-peer-deps
+          # نصب مستقیم پکیج‌های گمشده برای حل مشکل بیلد اندروید و مترو
+          npm install @react-native/gradle-plugin @react-native/metro-config --save-dev
       - name: Build Android APK
         script: | 
           cd android
