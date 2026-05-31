@@ -2,9 +2,9 @@ import React, { useContext, useState } from 'react';
 
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 
-import { TodoContext } from '…/context/TodoContext';
+import { TodoContext } from '../context/TodoContext';
 
-import ThemeSwitch from '…/components/ThemeSwitch';
+import ThemeSwitch from '../components/ThemeSwitch';
 
 export default function HomeScreen({ navigation, dark, setDark }) {
 

@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 
-import { TodoContext } from '…/context/TodoContext';
+import { TodoContext } from '../context/TodoContext';
 
 export default function FolderScreen({ route }) {
 
