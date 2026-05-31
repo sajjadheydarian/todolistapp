@@ -1,0 +1,19 @@
+workflows:
+  android-apk-build:
+    name: Build Android APK (Simple)
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    scripts:
+      - name: Set Android SDK location
+        script: | 
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Install npm dependencies
+        script: | 
+          npm install
+      - name: Build Android APK
+        script: | 
+          cd android
+          # دستور assembleRelease به جای bundleRelease باعث ساخته شدن فایل APK می‌شود
+          ./gradlew assembleRelease
+    artifacts:
+      - android/app/build/outputs/**/*.apk
