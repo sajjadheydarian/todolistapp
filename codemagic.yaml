@@ -16,7 +16,6 @@ workflows:
       - name: Build Android APK
         script: | 
           sed -i '' 's/\${usesCleartextTraffic}/true/g' android/app/src/main/AndroidManifest.xml || true
-          echo "newArchEnabled=false" >> android/gradle.properties
           cd android
           chmod +x ./gradlew
           ./gradlew assembleRelease
