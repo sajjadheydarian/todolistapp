@@ -13,7 +13,7 @@ workflows:
       - name: Build Android APK
         script: | 
           cd android
-          # دستور assembleRelease به جای bundleRelease باعث ساخته شدن فایل APK می‌شود
+          chmod +x ./gradlew
           ./gradlew assembleRelease
     artifacts:
       - android/app/build/outputs/**/*.apk
