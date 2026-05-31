@@ -13,14 +13,6 @@ workflows:
       - name: Install npm dependencies
         script: | 
           npm install --legacy-peer-deps
-          
-          # استخراج نسخه دقیق ری‌اکت نیتیو پروژه شما
-          RN_VERSION=$(node -p "require('./node_modules/react-native/package.json').version")
-          echo "React Native version detected: $RN_VERSION"
-          
-          # نصب افزونه‌ها دقیقاً هم‌نسخه با پروژه شما
-          npm install @react-native/gradle-plugin@$RN_VERSION @react-native/metro-config@$RN_VERSION --no-save
-          
       - name: Build Android APK
         script: | 
           cd android
