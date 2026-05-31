@@ -13,8 +13,8 @@ workflows:
       - name: Install npm dependencies
         script: | 
           npm install --legacy-peer-deps
-          # نصب ابزار مترو دقیقاً هم‌نسخه با موتور ری‌اکت نیتیو شما
-          npm install @react-native/metro-config@0.75.4 --save-dev
+          # نصب ابزارهای مترو و بابل هماهنگ با ری‌اکت نیتیو ۰.۷۵.۴
+          npm install @react-native/metro-config@0.75.4 @react-native/babel-preset@0.75.4 metro-react-native-babel-preset --save-dev
       - name: Build Android APK
         script: | 
           cd android
