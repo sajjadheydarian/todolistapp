@@ -4,7 +4,6 @@ workflows:
     max_build_duration: 120
     instance_type: mac_mini_m2
     environment:
-      # تنظیم صریح نسخه‌های پایدار نود و جاوا
       node: 20
       java: 17
     scripts:
@@ -13,8 +12,9 @@ workflows:
           echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
       - name: Install npm dependencies
         script: | 
-          # اضافه کردن legacy-peer-deps برای جلوگیری از خطاهای احتمالی نصب پکیج‌ها
           npm install --legacy-peer-deps
+          # نصب اجباری نسخه جدید پلاگین برای حل تمام خطاهای گریدل
+          npm install @react-native/gradle-plugin@0.75.4 --no-save
       - name: Build Android APK
         script: | 
           cd android
