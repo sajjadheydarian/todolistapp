@@ -13,7 +13,8 @@ workflows:
       - name: Install npm dependencies
         script: | 
           npm install --legacy-peer-deps
-          npm install @react-native/metro-config@0.76.5 @react-native/babel-preset@0.76.5 --save-dev --legacy-peer-deps
+          # نصب پکیج‌های هسته که در فایل شما جا افتاده بودند تا از کرش کردن سیستم جلوگیری شود
+          npm install @babel/core @babel/runtime @react-native/metro-config@0.76.5 @react-native/babel-preset@0.76.5 --save-dev --legacy-peer-deps
           npm uninstall metro-react-native-babel-preset || true
           npm install react-native-safe-area-context@4.14.1 react-native-gesture-handler@2.21.2 react-native-screens@3.35.0 --legacy-peer-deps
           
@@ -38,6 +39,12 @@ workflows:
           }
           "
           sed -i '' 's/\${usesCleartextTraffic}/true/g' android/app/src/main/AndroidManifest.xml || true
+          
+      - name: Debug RN Config (کد تشخیصی برای پیدا کردن خطای اصلی)
+        script: |
+          echo "--- START REACT NATIVE CONFIG CHECK ---"
+          npx react-native config || true
+          echo "--- END REACT NATIVE CONFIG CHECK ---"
           
       - name: Build Android APK
         script: | 
