@@ -19,9 +19,9 @@ workflows:
         script: |
           echo "module.exports = { presets: ['module:@react-native/babel-preset'] };" > babel.config.js
           echo "const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config'); module.exports = mergeConfig(getDefaultConfig(__dirname), {});" > metro.config.js
-      - name: Ultimate AndroidX & AGP Fix
+      - name: Ultimate AndroidX & Manifest Fix
         script: |
-          # 1. تزریق قانون اجباری به گریدل برای استفاده از نسخه 1.15.0 که با سیستم شما کاملاً سازگار است
+          # 1. تزریق قانون اجباری به گریدل
           cat << 'EOF' >> android/build.gradle
           
           allprojects {
@@ -34,8 +34,12 @@ workflows:
           }
           EOF
           
-          # 2. اسکریپت صددرصد تضمینی جاوااسکریپت برای آپدیت عدد گریدل در فایل‌ها (در صورت نیاز)
+          # 2. اسکریپت جاوااسکریپت برای آپدیت گریدل
           node -e "const fs=require('fs'); ['android/build.gradle','android/settings.gradle'].forEach(f=>{if(fs.existsSync(f)){let c=fs.readFileSync(f,'utf8');fs.writeFileSync(f,c.replace(/8\.5\.0/g,'8.6.1'));}});"
+          
+          # 3. حل خطای مانیفست (پر کردن متغیر خالی اینترنت)
+          sed -i '' 's/\${usesCleartextTraffic}/true/g' android/app/src/main/AndroidManifest.xml || true
+          
       - name: Build Android APK
         script: | 
           cd android
