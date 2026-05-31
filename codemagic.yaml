@@ -14,15 +14,28 @@ workflows:
         script: | 
           npm install --legacy-peer-deps
           npm install @react-native/metro-config@0.75.4 @react-native/babel-preset@0.75.4 --save-dev
-          npm uninstall metro-react-native-babel-preset
+          npm uninstall metro-react-native-babel-preset || true
       - name: Auto-Fix Config Files
         script: |
           echo "module.exports = { presets: ['module:@react-native/babel-preset'] };" > babel.config.js
           echo "const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config'); module.exports = mergeConfig(getDefaultConfig(__dirname), {});" > metro.config.js
-      - name: Bump Android Gradle Plugin
+      - name: Ultimate AndroidX & AGP Fix
         script: |
-          # ارتقای خودکار پلاگین اندروید از 8.5.0 به 8.6.1 برای حل خطای AndroidX
-          sed -i '' 's/8.5.0/8.6.1/g' android/build.gradle android/settings.gradle || true
+          # 1. تزریق قانون اجباری به گریدل برای استفاده از نسخه 1.15.0 که با سیستم شما کاملاً سازگار است
+          cat << 'EOF' >> android/build.gradle
+          
+          allprojects {
+              configurations.all {
+                  resolutionStrategy {
+                      force 'androidx.core:core:1.15.0'
+                      force 'androidx.core:core-ktx:1.15.0'
+                  }
+              }
+          }
+          EOF
+          
+          # 2. اسکریپت صددرصد تضمینی جاوااسکریپت برای آپدیت عدد گریدل در فایل‌ها (در صورت نیاز)
+          node -e "const fs=require('fs'); ['android/build.gradle','android/settings.gradle'].forEach(f=>{if(fs.existsSync(f)){let c=fs.readFileSync(f,'utf8');fs.writeFileSync(f,c.replace(/8\.5\.0/g,'8.6.1'));}});"
       - name: Build Android APK
         script: | 
           cd android
