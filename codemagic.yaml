@@ -3,13 +3,18 @@ workflows:
     name: Build Android APK (Simple)
     max_build_duration: 120
     instance_type: mac_mini_m2
+    environment:
+      # تنظیم صریح نسخه‌های پایدار نود و جاوا
+      node: 20
+      java: 17
     scripts:
       - name: Set Android SDK location
         script: | 
           echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
       - name: Install npm dependencies
         script: | 
-          npm install
+          # اضافه کردن legacy-peer-deps برای جلوگیری از خطاهای احتمالی نصب پکیج‌ها
+          npm install --legacy-peer-deps
       - name: Build Android APK
         script: | 
           cd android
