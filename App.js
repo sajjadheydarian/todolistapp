@@ -6,8 +6,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from './src/screens/HomeScreen';
 import FolderScreen from './src/screens/FolderScreen';
 import { TodoProvider } from './src/context/TodoContext';
-import LightTheme from './LightTheme'; 
-import DarkTheme from './DarkTheme';
+import LightTheme from './src/theme/LightTheme'; 
+import DarkTheme from './src/theme/DarkTheme';
 
 const Stack = createNativeStackNavigator();
 
