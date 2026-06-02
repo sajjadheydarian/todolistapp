@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Status
 import { TodoContext } from '../context/TodoContext';
 import { lightTheme, darkTheme } from '../theme/AuraTheme';
 
-export default function HomeScreen({ dark, setDark }) {
+export default function HomeScreen({ navigation, dark, setDark }) {
     const { todos, categories, addTodo, toggleTodo, deleteTodo } = useContext(TodoContext);
     const theme = dark ? darkTheme : lightTheme;
     const { colors } = theme;
@@ -57,9 +57,9 @@ export default function HomeScreen({ dark, setDark }) {
     return (
         <View style={[styles.container, { backgroundColor: colors.bgApp }]}>
             <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} backgroundColor={colors.bgApp} />
-            
+
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
-                
+
                 {/* هدر اپلیکیشن */}
                 <View style={styles.header}>
                     <View style={styles.logoRow}>
@@ -68,9 +68,15 @@ export default function HomeScreen({ dark, setDark }) {
                         </View>
                         <Text style={[styles.appName, { color: colors.textPrimary }]}>کارام ارکستریتور</Text>
                     </View>
-                    <TouchableOpacity onPress={() => setDark(!dark)} style={[styles.themeBtn, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                        <Text style={{ fontSize: 20 }}>{dark ? '☀️' : '🌙'}</Text>
-                    </TouchableOpacity>
+
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                        <TouchableOpacity onPress={() => navigation.navigate('Settings', { dark })} style={[styles.themeBtn, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                            <Text style={{ fontSize: 20 }}>⚙️</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setDark(!dark)} style={[styles.themeBtn, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                            <Text style={{ fontSize: 20 }}>{dark ? '☀️' : '🌙'}</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* کارت‌های آماری */}
@@ -94,14 +100,14 @@ export default function HomeScreen({ dark, setDark }) {
                         placeholderTextColor={colors.textMuted}
                         style={[styles.input, { color: colors.textPrimary, backgroundColor: colors.bgApp, borderColor: colors.border }]}
                     />
-                    
+
                     {/* انتخاب دسته‌بندی در فرم */}
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catSelectScroll}>
                         {categories.map(cat => (
-                            <TouchableOpacity 
-                                key={cat.id} 
+                            <TouchableOpacity
+                                key={cat.id}
                                 onPress={() => setSelectedCategory(cat.id)}
-                                style={[styles.catChip, { 
+                                style={[styles.catChip, {
                                     backgroundColor: selectedCategory === cat.id ? cat.color : colors.bgApp,
                                     borderColor: selectedCategory === cat.id ? cat.color : colors.border
                                 }]}>
@@ -113,14 +119,14 @@ export default function HomeScreen({ dark, setDark }) {
                     </ScrollView>
 
                     <View style={styles.formRow}>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             onPress={() => setPriority(priority === 'high' ? 'medium' : 'high')}
                             style={[styles.priorityBadge, { backgroundColor: priority === 'high' ? colors.dangerBg : colors.bgApp, borderColor: priority === 'high' ? colors.danger : colors.border }]}>
                             <Text style={{ color: priority === 'high' ? colors.danger : colors.textSecondary, fontSize: 13 }}>
                                 {priority === 'high' ? 'فوری' : 'عادی'}
                             </Text>
                         </TouchableOpacity>
-                        
+
                         <TouchableOpacity onPress={handleAdd} style={[styles.addBtn, { backgroundColor: colors.primary }]}>
                             <Text style={styles.addBtnText}>+ ایجاد کار</Text>
                         </TouchableOpacity>
@@ -130,9 +136,9 @@ export default function HomeScreen({ dark, setDark }) {
                 {/* فیلتر وضعیت (اسکرول افقی) */}
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
                     {['all', 'active', 'completed'].map((f) => (
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             key={f} onPress={() => setFilter(f)}
-                            style={[styles.filterBtn, { 
+                            style={[styles.filterBtn, {
                                 backgroundColor: filter === f ? colors.primaryGlow : colors.bgCard,
                                 borderColor: filter === f ? colors.primary : colors.border
                             }]}>
@@ -145,13 +151,13 @@ export default function HomeScreen({ dark, setDark }) {
 
                 {/* فیلتر دسته‌بندی (اسکرول افقی) */}
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.filtersScroll, { marginBottom: 20 }]}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         onPress={() => setCategoryFilter('all')}
                         style={[styles.filterBtn, { paddingVertical: 6, backgroundColor: categoryFilter === 'all' ? colors.primaryGlow : colors.bgCard, borderColor: categoryFilter === 'all' ? colors.primary : colors.border }]}>
                         <Text style={{ color: categoryFilter === 'all' ? colors.primary : colors.textSecondary, fontSize: 12 }}>همه دسته‌ها</Text>
                     </TouchableOpacity>
                     {categories.map((c) => (
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             key={c.id} onPress={() => setCategoryFilter(c.id)}
                             style={[styles.filterBtn, { paddingVertical: 6, backgroundColor: categoryFilter === c.id ? c.color + '20' : colors.bgCard, borderColor: categoryFilter === c.id ? c.color : colors.border }]}>
                             <Text style={{ color: categoryFilter === c.id ? c.color : colors.textSecondary, fontSize: 12, fontWeight: categoryFilter === c.id ? 'bold' : 'normal' }}>
@@ -165,21 +171,21 @@ export default function HomeScreen({ dark, setDark }) {
                 {filteredTodos.map(todo => {
                     const cat = categories.find(c => c.id === todo.category);
                     return (
-                        <View key={todo.id} style={[styles.taskCard, { 
-                            backgroundColor: colors.bgCard, 
+                        <View key={todo.id} style={[styles.taskCard, {
+                            backgroundColor: colors.bgCard,
                             borderColor: todo.completed ? colors.success : colors.border,
                             opacity: todo.completed ? 0.7 : 1
                         }]}>
                             <View style={[styles.categoryIndicator, { backgroundColor: cat?.color || colors.border }]} />
-                            
+
                             <TouchableOpacity onPress={() => toggleTodo(todo.id)} style={styles.checkboxArea}>
                                 <View style={[styles.checkbox, { borderColor: todo.completed ? colors.success : colors.textMuted, backgroundColor: todo.completed ? colors.success : 'transparent' }]}>
-                                    {todo.completed && <Text style={{color: 'white', fontSize: 10}}>✓</Text>}
+                                    {todo.completed && <Text style={{ color: 'white', fontSize: 10 }}>✓</Text>}
                                 </View>
                             </TouchableOpacity>
 
                             <View style={styles.taskContent}>
-                                <Text style={[styles.taskTitle, { 
+                                <Text style={[styles.taskTitle, {
                                     color: todo.completed ? colors.textMuted : colors.textPrimary,
                                     textDecorationLine: todo.completed ? 'line-through' : 'none'
                                 }]}>
@@ -213,7 +219,7 @@ const styles = StyleSheet.create({
     logoText: { color: 'white', fontSize: 22, fontWeight: 'bold' },
     appName: { fontSize: 20, fontWeight: 'bold', marginLeft: 10 },
     themeBtn: { width: 45, height: 45, borderRadius: 25, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
-    
+
     statsGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
     statCard: { flex: 0.48, padding: 15, borderRadius: 16, borderWidth: 1, elevation: 1 },
     statLabel: { fontSize: 13, marginBottom: 5, fontWeight: '500' },

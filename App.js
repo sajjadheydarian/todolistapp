@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { I18nManager } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import SettingsScreen from './src/screens/SettingsScreen';
 
 import HomeScreen from './src/screens/HomeScreen';
 import { TodoProvider } from './src/context/TodoContext';
@@ -21,7 +22,7 @@ export default function App() {
   }, []);
 
   const activeTheme = isDark ? darkTheme : lightTheme;
-  
+
   // تنظیم رنگ‌های پایه نویگیشن برای هماهنگی با گوشی
   const navTheme = {
     dark: isDark,
@@ -43,6 +44,7 @@ export default function App() {
           <Stack.Screen name="Home">
             {props => <HomeScreen {...props} dark={isDark} setDark={setIsDark} />}
           </Stack.Screen>
+          <Stack.Screen name="Settings" component={SettingsScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </TodoProvider>
