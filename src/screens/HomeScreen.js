@@ -2,6 +2,7 @@ import React, { useContext, useState, useMemo, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Alert } from 'react-native';
 import { TodoContext } from '../context/TodoContext';
 import { lightTheme, darkTheme } from '../theme/AuraTheme';
+import Config from "react-native-config";
 
 // 1. ایمپورت کردن کامپوننت‌های تپسل
 import { TapsellPlus, TapsellPlusBannerType, TapsellPlusHorizontalGravity, TapsellPlusVerticalGravity } from 'react-native-tapsell-plus';
@@ -36,32 +37,28 @@ export default function HomeScreen({ navigation, dark, setDark }) {
         return matchStatus && matchCategory;
     });
 
-    // 2. کدهای مربوط به درخواست و نمایش بنر تبلیغاتی تپسل
-    const ZONE_ID = "6a21b9880277c864bb892bb1"; // این شناسه تستی است، با شناسه پنل خودتان عوض کنید
+    
+    
 
     useEffect(() => {
         let currentBannerId = null;
-
-        TapsellPlus.requestStandardBannerAd(ZONE_ID, TapsellPlusBannerType.BANNER_320x50)
+        TapsellPlus.requestStandardBannerAd(Config.TAPSELL_ZONE_ID, TapsellPlusBannerType.BANNER_320x50)
             .then((responseId) => {
                 currentBannerId = responseId;
-
-                // پیام موفقیت (موقتی برای تست)
-                Alert.alert("گزارش تپسل", "درخواست موفق بود! الان باید بنر باز شود.");
-
+                // نمایش بنر در پایین (BOTTOM) و مرکز (CENTER) صفحه
                 TapsellPlus.showStandardBannerAd(
                     responseId,
                     TapsellPlusHorizontalGravity.BOTTOM,
                     TapsellPlusVerticalGravity.CENTER,
-                    (data) => console.log("Banner Opened"),
-                    (error) => Alert.alert("ارور هنگام نمایش", JSON.stringify(error))
+                    (data) => console.log("Banner Opened successfully"),
+                    (error) => console.log("Error showing banner:", error)
                 );
             })
             .catch(error => {
-                // این مهم‌ترین بخش است! ارور را روی صفحه گوشی نشان می‌دهد
-                Alert.alert("ارور دریافت تپسل", JSON.stringify(error));
+                console.log("Error requesting banner:", error);
             });
 
+        // وقتی کاربر از برنامه خارج می‌شود، تبلیغ را می‌بندیم تا رم گوشی پر نشود
         return () => {
             if (currentBannerId) {
                 TapsellPlus.destroyStandardBannerAd(currentBannerId);
@@ -101,9 +98,9 @@ export default function HomeScreen({ navigation, dark, setDark }) {
                 <View style={styles.header}>
                     <View style={styles.logoRow}>
                         <View style={[styles.logoIcon, { backgroundColor: colors.primary }]}>
-                            <Text style={styles.logoText}>K</Text>
+                            <Text style={styles.logoText}>لیست کارم</Text>
                         </View>
-                        <Text style={[styles.appName, { color: colors.textPrimary }]}>کارام ارکستریتور</Text>
+                        <Text style={[styles.appName, { color: colors.textPrimary }]}>مدیریت کارهای روزمره</Text>
                     </View>
 
                     <View style={{ flexDirection: 'row', gap: 10 }}>
