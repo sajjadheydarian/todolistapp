@@ -12,7 +12,7 @@ import { lightTheme, darkTheme } from './src/theme/AuraTheme';
 import { TapsellPlus } from 'react-native-tapsell-plus';
 
 // 2. کلید تپسل (این کلید تستی است، حتماً بعداً کلید واقعی پنل خودت را اینجا بگذار)
-const TAPSELL_APP_KEY = "pqtgnqjqebmkfqjlkfhnqjqebmkfqjlkfhnqjqebmkfqjlkfhnqjqebmkfqjlkfhnqjqebm";
+const TAPSELL_APP_KEY = "fmpcogmjdqeljkjcbrmsldgpmiseisnjsrajpgoaprboibkspljnbtdejrtclmrbbjofdl";
 
 const Stack = createNativeStackNavigator();
 

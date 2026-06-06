@@ -37,7 +37,7 @@ export default function HomeScreen({ navigation, dark, setDark }) {
     });
 
     // 2. کدهای مربوط به درخواست و نمایش بنر تبلیغاتی تپسل
-    const ZONE_ID = "5cfaa9425e40e600010f3938"; // این شناسه تستی است، با شناسه پنل خودتان عوض کنید
+    const ZONE_ID = "6a21b9880277c864bb892bb1"; // این شناسه تستی است، با شناسه پنل خودتان عوض کنید
     
     useEffect(() => {
         let currentBannerId = null;
