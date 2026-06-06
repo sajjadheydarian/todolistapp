@@ -38,27 +38,30 @@ export default function HomeScreen({ navigation, dark, setDark }) {
 
     // 2. کدهای مربوط به درخواست و نمایش بنر تبلیغاتی تپسل
     const ZONE_ID = "6a21b9880277c864bb892bb1"; // این شناسه تستی است، با شناسه پنل خودتان عوض کنید
-    
+
     useEffect(() => {
         let currentBannerId = null;
 
         TapsellPlus.requestStandardBannerAd(ZONE_ID, TapsellPlusBannerType.BANNER_320x50)
             .then((responseId) => {
                 currentBannerId = responseId;
-                // نمایش بنر در پایین (BOTTOM) و مرکز (CENTER) صفحه
+
+                // پیام موفقیت (موقتی برای تست)
+                Alert.alert("گزارش تپسل", "درخواست موفق بود! الان باید بنر باز شود.");
+
                 TapsellPlus.showStandardBannerAd(
                     responseId,
                     TapsellPlusHorizontalGravity.BOTTOM,
                     TapsellPlusVerticalGravity.CENTER,
-                    (data) => console.log("Banner Opened", data),
-                    (error) => console.log("Banner Error", error)
+                    (data) => console.log("Banner Opened"),
+                    (error) => Alert.alert("ارور هنگام نمایش", JSON.stringify(error))
                 );
             })
             .catch(error => {
-                console.log("Error requesting banner:", error);
+                // این مهم‌ترین بخش است! ارور را روی صفحه گوشی نشان می‌دهد
+                Alert.alert("ارور دریافت تپسل", JSON.stringify(error));
             });
 
-        // وقتی کاربر از برنامه خارج می‌شود، تبلیغ را می‌بندیم تا رم گوشی پر نشود
         return () => {
             if (currentBannerId) {
                 TapsellPlus.destroyStandardBannerAd(currentBannerId);
