@@ -1,7 +1,10 @@
-import React, { useContext, useState, useMemo } from 'react';
+import React, { useContext, useState, useMemo, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Alert } from 'react-native';
 import { TodoContext } from '../context/TodoContext';
 import { lightTheme, darkTheme } from '../theme/AuraTheme';
+
+// 1. ایمپورت کردن کامپوننت‌های تپسل
+import { TapsellPlus, TapsellPlusBannerType, TapsellPlusHorizontalGravity, TapsellPlusVerticalGravity } from 'react-native-tapsell-plus';
 
 export default function HomeScreen({ navigation, dark, setDark }) {
     const { todos, categories, addTodo, toggleTodo, deleteTodo } = useContext(TodoContext);
@@ -33,6 +36,36 @@ export default function HomeScreen({ navigation, dark, setDark }) {
         return matchStatus && matchCategory;
     });
 
+    // 2. کدهای مربوط به درخواست و نمایش بنر تبلیغاتی تپسل
+    const ZONE_ID = "5cfaa9425e40e600010f3938"; // این شناسه تستی است، با شناسه پنل خودتان عوض کنید
+    
+    useEffect(() => {
+        let currentBannerId = null;
+
+        TapsellPlus.requestStandardBannerAd(ZONE_ID, TapsellPlusBannerType.BANNER_320x50)
+            .then((responseId) => {
+                currentBannerId = responseId;
+                // نمایش بنر در پایین (BOTTOM) و مرکز (CENTER) صفحه
+                TapsellPlus.showStandardBannerAd(
+                    responseId,
+                    TapsellPlusHorizontalGravity.BOTTOM,
+                    TapsellPlusVerticalGravity.CENTER,
+                    (data) => console.log("Banner Opened", data),
+                    (error) => console.log("Banner Error", error)
+                );
+            })
+            .catch(error => {
+                console.log("Error requesting banner:", error);
+            });
+
+        // وقتی کاربر از برنامه خارج می‌شود، تبلیغ را می‌بندیم تا رم گوشی پر نشود
+        return () => {
+            if (currentBannerId) {
+                TapsellPlus.destroyStandardBannerAd(currentBannerId);
+            }
+        };
+    }, []);
+
     // اضافه کردن کار جدید
     const handleAdd = () => {
         if (title.trim()) {
@@ -58,7 +91,8 @@ export default function HomeScreen({ navigation, dark, setDark }) {
         <View style={[styles.container, { backgroundColor: colors.bgApp }]}>
             <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} backgroundColor={colors.bgApp} />
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
+            {/* یک پدینگ 80 تایی به پایین دادیم تا بنر تبلیغاتی روی آیتم آخر نیفتد */}
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 80 }}>
 
                 {/* هدر اپلیکیشن */}
                 <View style={styles.header}>

@@ -1,4 +1,4 @@
-package com.karam
+package ir.karamlist
 
 import android.os.Bundle
 import com.facebook.react.ReactActivity

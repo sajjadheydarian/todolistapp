@@ -8,6 +8,12 @@ import HomeScreen from './src/screens/HomeScreen';
 import { TodoProvider } from './src/context/TodoContext';
 import { lightTheme, darkTheme } from './src/theme/AuraTheme';
 
+// 1. اضافه کردن کتابخانه تپسل
+import { TapsellPlus } from 'react-native-tapsell-plus';
+
+// 2. کلید تپسل (این کلید تستی است، حتماً بعداً کلید واقعی پنل خودت را اینجا بگذار)
+const TAPSELL_APP_KEY = "pqtgnqjqebmkfqjlkfhnqjqebmkfqjlkfhnqjqebmkfqjlkfhnqjqebmkfqjlkfhnqjqebm";
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -19,6 +25,11 @@ export default function App() {
       I18nManager.allowRTL(true);
       I18nManager.forceRTL(true);
     }
+
+    // 3. راه‌اندازی تبلیغات تپسل به محض باز شدن برنامه
+    TapsellPlus.initialize(TAPSELL_APP_KEY);
+    TapsellPlus.setGDPRConsent(true);
+
   }, []);
 
   const activeTheme = isDark ? darkTheme : lightTheme;
