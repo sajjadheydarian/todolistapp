@@ -1,5 +1,5 @@
 import React, { useContext, useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Dimensions, Modal } from 'react-native';
 import { TodoContext } from '../context/TodoContext';
 import { lightTheme, darkTheme } from '../theme/AuraTheme';
 import { LineChart } from 'react-native-chart-kit';
@@ -12,53 +12,59 @@ export default function ReportsScreen({ dark }) {
     const theme = dark ? darkTheme : lightTheme;
     const { colors } = theme;
 
-    const [timeFrame, setTimeFrame] = useState('weekly'); 
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [timeFrame, setTimeFrame] = useState({ label: 'هفتگی', days: 7 }); 
 
-    // محاسبه آمار کلی
+    const timeOptions = [
+        { label: '۳ روزه', days: 3 },
+        { label: 'هفتگی', days: 7 },
+        { label: 'دو هفته', days: 14 },
+        { label: 'یک ماهه', days: 30 },
+    ];
+
     const totalTasks = todos.length;
     const completedTasks = todos.filter(t => t.completed).length;
     const activeTasks = totalTasks - completedTasks;
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-    // موتور محاسبه‌گر واقعیِ نمودار (۷ روز گذشته)
     const chartData = useMemo(() => {
         const labels = [];
         const data = [];
         
-        for (let i = 6; i >= 0; i--) {
+        for (let i = timeFrame.days - 1; i >= 0; i--) {
             const date = new Date();
             date.setDate(date.getDate() - i);
             
-            // استخراج حرف اول روز هفته (مثل: ش، ی، د)
-            const dayName = new Intl.DateTimeFormat('fa-IR', { weekday: 'narrow' }).format(date);
-            labels.push(dayName);
+            // برای بازه 30 روزه، فقط بعضی لیبل‌ها را نشان می‌دهیم تا نمودار شلوغ نشود
+            if (timeFrame.days <= 7 || i % Math.ceil(timeFrame.days / 7) === 0) {
+                labels.push(new Intl.DateTimeFormat('fa-IR', { weekday: 'narrow' }).format(date));
+            } else {
+                labels.push('');
+            }
             
-            // پیدا کردن کارهای ثبت شده در این روز
             const startOfDay = new Date(date.setHours(0,0,0,0)).getTime();
             const endOfDay = new Date(date.setHours(23,59,59,999)).getTime();
             
             const dayTasks = todos.filter(t => t.createdAt >= startOfDay && t.createdAt <= endOfDay);
             
             if (dayTasks.length === 0) {
-                data.push(0); // اگر کاری نبود، درصد پیشرفت صفر
+                data.push(0);
             } else {
                 const completed = dayTasks.filter(t => t.completed).length;
                 data.push(Math.round((completed / dayTasks.length) * 100));
             }
         }
 
-        // جلوگیری از ایجاد خطای بصری در نمودار (اگر هیچ دیتایی نبود)
         const isAllZero = data.every(d => d === 0);
-
         return {
             labels,
             datasets: [{
-                data: isAllZero ? [0, 0, 0, 0, 0, 0, 0] : data,
+                data: isAllZero ? Array(timeFrame.days).fill(0) : data,
                 color: (opacity = 1) => colors.primary,
                 strokeWidth: 3
             }]
         };
-    }, [todos, colors.primary]);
+    }, [todos, colors.primary, timeFrame.days]);
 
     const chartConfig = {
         backgroundGradientFrom: colors.bgCard,
@@ -67,7 +73,7 @@ export default function ReportsScreen({ dark }) {
         color: (opacity = 1) => dark ? `rgba(69, 123, 157, ${opacity})` : `rgba(29, 53, 87, ${opacity})`,
         labelColor: (opacity = 1) => colors.textSecondary,
         style: { borderRadius: 16 },
-        propsForDots: { r: '5', strokeWidth: '2', stroke: colors.primary }
+        propsForDots: { r: timeFrame.days > 14 ? '2' : '5', strokeWidth: '2', stroke: colors.primary }
     };
 
     return (
@@ -77,10 +83,11 @@ export default function ReportsScreen({ dark }) {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
                 <View style={styles.headerRow}>
                     <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>گزارش‌ها</Text>
-                    <View style={[styles.dropdown, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                        <Text style={[styles.dropdownText, { color: colors.textPrimary }]}>هفتگی</Text>
+                    
+                    <TouchableOpacity onPress={() => setIsDropdownOpen(true)} style={[styles.dropdown, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                        <Text style={[styles.dropdownText, { color: colors.textPrimary }]}>{timeFrame.label}</Text>
                         <Feather name="chevron-down" size={16} color={colors.textSecondary} style={{ marginRight: 6 }} />
-                    </View>
+                    </TouchableOpacity>
                 </View>
 
                 <View style={[styles.progressCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
@@ -107,16 +114,31 @@ export default function ReportsScreen({ dark }) {
                 <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>نمودار پیشرفت</Text>
                 <View style={[styles.chartWrapper, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                     <LineChart
-                        data={chartData}
-                        width={screenWidth - 70}
-                        height={180}
-                        chartConfig={chartConfig}
-                        bezier
-                        style={{ marginVertical: 8, borderRadius: 16 }}
+                        data={chartData} width={screenWidth - 70} height={180}
+                        chartConfig={chartConfig} bezier style={{ marginVertical: 8, borderRadius: 16 }}
                         withVerticalLines={false}
                     />
                 </View>
             </ScrollView>
+
+            {/* مودال انتخاب بازه زمانی */}
+            <Modal visible={isDropdownOpen} transparent={true} animationType="fade">
+                <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsDropdownOpen(false)}>
+                    <View style={[styles.dropdownMenu, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                        {timeOptions.map((opt, idx) => (
+                            <TouchableOpacity 
+                                key={idx} 
+                                style={[styles.dropdownItem, idx < timeOptions.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
+                                onPress={() => { setTimeFrame(opt); setIsDropdownOpen(false); }}
+                            >
+                                <Text style={{ color: timeFrame.days === opt.days ? colors.primary : colors.textPrimary, fontWeight: timeFrame.days === opt.days ? 'bold' : 'normal' }}>
+                                    {opt.label}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </TouchableOpacity>
+            </Modal>
         </View>
     );
 }
@@ -136,5 +158,8 @@ const styles = StyleSheet.create({
     miniStatValue: { fontSize: 18, fontWeight: 'bold', marginBottom: 2 },
     miniStatLabel: { fontSize: 11 },
     sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 15 },
-    chartWrapper: { padding: 10, borderRadius: 24, borderWidth: 1, alignItems: 'center' }
+    chartWrapper: { padding: 10, borderRadius: 24, borderWidth: 1, alignItems: 'center' },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' },
+    dropdownMenu: { width: 200, borderRadius: 15, borderWidth: 1, overflow: 'hidden', elevation: 5 },
+    dropdownItem: { padding: 15, alignItems: 'center' }
 });

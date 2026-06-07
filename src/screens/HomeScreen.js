@@ -15,7 +15,7 @@ export default function HomeScreen({ navigation, dark, setDark }) {
     const [filter, setFilter] = useState('active');
 
     // 🌟 منطق جدید: استخراج تاریخ امروز ساعت ۰۰:۰۰ بامداد
-    const todayTimestamp = useMemo(() => new Date().setHours(0,0,0,0), []);
+    const todayTimestamp = useMemo(() => new Date().setHours(0, 0, 0, 0), []);
 
     // 🌟 فیلتر کردن کل کارها فقط برای «امروز»
     const todaysTodos = useMemo(() => {
@@ -32,8 +32,10 @@ export default function HomeScreen({ navigation, dark, setDark }) {
     }, [todaysTodos]);
 
     // فیلتر نهایی تب‌ها (در حال انجام / تکمیل شده)
-    const filteredTodos = todaysTodos.filter(t => {
-        return filter === 'active' ? !t.completed : (filter === 'completed' ? t.completed : true);
+    const filteredTodos = todos.filter(t => {
+        if (filter === 'active') return !t.completed;
+        if (filter === 'completed') return t.completed;
+        return true; // حالت همه
     });
 
     const handleAdd = () => {
@@ -63,7 +65,7 @@ export default function HomeScreen({ navigation, dark, setDark }) {
             <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} backgroundColor={colors.bgApp} />
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-                
+
                 <View style={styles.header}>
                     <View>
                         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>امروز</Text>
@@ -115,16 +117,16 @@ export default function HomeScreen({ navigation, dark, setDark }) {
                     filteredTodos.map(todo => (
                         <View key={todo.id} style={[styles.taskItem, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                             <TouchableOpacity onPress={() => toggleTodo(todo.id)} style={styles.checkboxWrapper}>
-                                <View style={[styles.checkbox, { 
+                                <View style={[styles.checkbox, {
                                     borderColor: todo.completed ? colors.primary : colors.textMuted,
-                                    backgroundColor: todo.completed ? colors.primary : 'transparent' 
+                                    backgroundColor: todo.completed ? colors.primary : 'transparent'
                                 }]}>
                                     {todo.completed && <Feather name="check" size={12} color="#FFF" />}
                                 </View>
                             </TouchableOpacity>
 
                             <View style={styles.taskTextContainer}>
-                                <Text style={[styles.taskTitle, { 
+                                <Text style={[styles.taskTitle, {
                                     color: todo.completed ? colors.textMuted : colors.textPrimary,
                                     textDecorationLine: todo.completed ? 'line-through' : 'none'
                                 }]}>

@@ -3,33 +3,39 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar } from 
 import Feather from 'react-native-vector-icons/Feather';
 import { TodoContext } from '../context/TodoContext';
 import { lightTheme, darkTheme } from '../theme/AuraTheme';
+import moment from 'moment-jalaali'; // اضافه شدن کتابخانه
+
+// تنظیمات زبان فارسی برای تقویم
+moment.loadPersian({ usePersianDigits: true, dialect: 'persian-modern' });
 
 export default function CalendarScreen({ dark }) {
     const { todos, toggleTodo } = useContext(TodoContext);
     const theme = dark ? darkTheme : lightTheme;
     const { colors } = theme;
 
-    // استیت برای روز انتخاب شده (پیش‌فرض: شروع امروز)
     const [selectedDate, setSelectedDate] = useState(new Date().setHours(0,0,0,0));
 
-    // تولید تقویم شمسی پویا (از ۲ روز قبل تا ۴ روز آینده برای ظاهر زیباتر)
+    // تولید تقویم شمسی واقعی با moment-jalaali
     const calendarDays = useMemo(() => {
         const days = [];
         for(let i = -2; i <= 4; i++) {
-            const d = new Date();
-            d.setDate(d.getDate() + i);
-            const ts = d.setHours(0,0,0,0);
+            const d = moment().add(i, 'days');
             
-            const dayChar = new Intl.DateTimeFormat('fa-IR', { weekday: 'narrow' }).format(d);
-            const dayNum = new Intl.DateTimeFormat('fa-IR', { day: 'numeric' }).format(d);
+            // گرفتن حرف اول روز هفته (ش، ی، د و ...)
+            const dayName = d.format('dddd').charAt(0); 
+            const dayNum = d.format('jDD'); // تاریخ روز شمسی
             
-            days.push({ day: dayChar, dateText: dayNum, timestamp: ts });
+            days.push({ 
+                day: dayName, 
+                dateText: dayNum, 
+                timestamp: d.startOf('day').valueOf() 
+            });
         }
         return days;
     }, []);
 
-    // نام ماه و سال جاری به شمسی برای هدر
-    const currentMonthYear = new Intl.DateTimeFormat('fa-IR', { month: 'long', year: 'numeric' }).format(new Date());
+    // نام ماه و سال جاری به شمسی
+    const currentMonthYear = moment(selectedDate).format('jMMMM jYYYY');
 
     // فیلتر کارهای مربوط به روز انتخاب شده و مرتب‌سازی بر اساس زمان
     const dailyTodos = todos
