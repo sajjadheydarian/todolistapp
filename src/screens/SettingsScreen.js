@@ -1,87 +1,128 @@
-import React, { useContext, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
-import { TodoContext } from '../context/TodoContext';
+import React, { useContext } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Switch, Alert } from 'react-native';
+import Feather from 'react-native-vector-icons/Feather';
 import { lightTheme, darkTheme } from '../theme/AuraTheme';
+import { TodoContext } from '../context/TodoContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// پالت رنگ‌های پیشنهادی برای ساخت دسته جدید
-const PRESET_COLORS = ['#6366f1', '#3b82f6', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6'];
-
-export default function SettingsScreen({ route, navigation }) {
-    const { dark } = route.params;
+export default function SettingsScreen({ dark, setDark }) {
     const theme = dark ? darkTheme : lightTheme;
     const { colors } = theme;
-    const { categories, addCategory, deleteCategory } = useContext(TodoContext);
+    
+    // در صورت نیاز به پاکسازی کل داده‌ها
+    // const { setTodos, setCategories } = useContext(TodoContext); 
 
-    const [catName, setCatName] = useState('');
-    const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0]);
-
-    const handleAdd = () => {
-        if (catName.trim()) {
-            addCategory(catName, selectedColor);
-            setCatName('');
-        }
-    };
-
-    const confirmDelete = (id, name) => {
-        Alert.alert("حذف دسته‌بندی", `آیا دسته‌بندی "${name}" حذف شود؟ کارهای این دسته بدون برچسب می‌شوند.`, [
-            { text: "انصراف", style: "cancel" },
-            { text: "حذف", onPress: () => deleteCategory(id), style: "destructive" }
-        ]);
+    const handleClearData = () => {
+        Alert.alert(
+            "پاک کردن تمام داده‌ها",
+            "آیا مطمئن هستید؟ تمام وظایف و دسته‌بندی‌های شما برای همیشه پاک خواهند شد و قابل بازیابی نیستند.",
+            [
+                { text: "انصراف", style: "cancel" },
+                { 
+                    text: "بله، پاک شود", 
+                    onPress: async () => {
+                        // await AsyncStorage.clear();
+                        // در یک نسخه کامل اینجا توابع ریست کردن Context صدا زده می‌شوند
+                        Alert.alert("موفقیت", "داده‌ها با موفقیت پاک شدند. (این یک پیام نمایشی است)");
+                    }, 
+                    style: "destructive" 
+                }
+            ]
+        );
     };
 
     return (
         <View style={[styles.container, { backgroundColor: colors.bgApp }]}>
-            {/* هدر صفحه تنظیمات */}
-            <View style={[styles.header, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Text style={{ color: colors.textPrimary, fontSize: 16 }}>➔ بازگشت</Text>
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>تنظیمات دسته‌ها</Text>
-            </View>
+            <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} backgroundColor={colors.bgApp} />
 
-            <ScrollView contentContainerStyle={{ padding: 20 }}>
-                {/* فرم ساخت دسته‌بندی */}
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+                
+                {/* هدر صفحه */}
+                <View style={styles.headerRow}>
+                    <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>تنظیمات</Text>
+                </View>
+
+                {/* بخش اول: شخصی‌سازی (ظاهر اپلیکیشن) */}
+                <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>شخصی‌سازی</Text>
                 <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                    <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>ایجاد دسته‌بندی جدید</Text>
-                    
-                    <TextInput
-                        value={catName} onChangeText={setCatName}
-                        placeholder="نام دسته‌بندی (مثلاً: باشگاه)" placeholderTextColor={colors.textMuted}
-                        style={[styles.input, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.bgApp }]}
-                    />
-                    
-                    <Text style={[styles.subTitle, { color: colors.textSecondary }]}>انتخاب رنگ:</Text>
-                    <View style={styles.colorRow}>
-                        {PRESET_COLORS.map(color => (
-                            <TouchableOpacity 
-                                key={color} onPress={() => setSelectedColor(color)}
-                                style={[styles.colorCircle, { 
-                                    backgroundColor: color, 
-                                    borderWidth: selectedColor === color ? 3 : 0, 
-                                    borderColor: colors.textPrimary 
-                                }]} 
-                            />
-                        ))}
+                    <View style={styles.settingRow}>
+                        <View style={styles.settingIconText}>
+                            <View style={[styles.iconWrapper, { backgroundColor: colors.primaryGlow }]}>
+                                <Feather name={dark ? "moon" : "sun"} size={20} color={colors.primary} />
+                            </View>
+                            <Text style={[styles.settingText, { color: colors.textPrimary }]}>حالت تاریک (Dark Mode)</Text>
+                        </View>
+                        <Switch
+                            value={dark}
+                            onValueChange={(val) => setDark(val)}
+                            trackColor={{ false: colors.border, true: colors.primary }}
+                            thumbColor={"#FFF"}
+                        />
                     </View>
+                </View>
 
-                    <TouchableOpacity onPress={handleAdd} style={[styles.addBtn, { backgroundColor: colors.primary }]}>
-                        <Text style={styles.addBtnText}>+ افزودن دسته</Text>
+                {/* بخش دوم: مدیریت داده‌ها */}
+                <Text style={[styles.sectionTitle, { color: colors.textSecondary, marginTop: 20 }]}>داده‌ها و حریم خصوصی</Text>
+                <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                    <TouchableOpacity style={[styles.settingRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+                        <View style={styles.settingIconText}>
+                            <View style={[styles.iconWrapper, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+                                <Feather name="download-cloud" size={20} color={colors.success} />
+                            </View>
+                            <Text style={[styles.settingText, { color: colors.textPrimary }]}>پشتیبان‌گیری از داده‌ها</Text>
+                        </View>
+                        <Feather name="chevron-left" size={20} color={colors.textMuted} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={handleClearData} style={styles.settingRow}>
+                        <View style={styles.settingIconText}>
+                            <View style={[styles.iconWrapper, { backgroundColor: colors.dangerBg }]}>
+                                <Feather name="trash-2" size={20} color={colors.danger} />
+                            </View>
+                            <Text style={[styles.settingText, { color: colors.danger }]}>پاک کردن تمام اطلاعات</Text>
+                        </View>
                     </TouchableOpacity>
                 </View>
 
-                {/* لیست دسته‌بندی‌های موجود */}
-                <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>دسته‌بندی‌های فعلی</Text>
-                {categories.map(cat => (
-                    <View key={cat.id} style={[styles.catRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                        <View style={styles.catInfo}>
-                            <View style={[styles.catDot, { backgroundColor: cat.color }]} />
-                            <Text style={[styles.catName, { color: colors.textPrimary }]}>{cat.name}</Text>
+                {/* بخش سوم: درباره اپلیکیشن */}
+                <Text style={[styles.sectionTitle, { color: colors.textSecondary, marginTop: 20 }]}>درباره</Text>
+                <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                    <TouchableOpacity style={[styles.settingRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+                        <View style={styles.settingIconText}>
+                            <View style={[styles.iconWrapper, { backgroundColor: colors.primaryGlow }]}>
+                                <Feather name="star" size={20} color={colors.primary} />
+                            </View>
+                            <Text style={[styles.settingText, { color: colors.textPrimary }]}>امتیاز به برنامه</Text>
                         </View>
-                        <TouchableOpacity onPress={() => confirmDelete(cat.id, cat.name)}>
-                            <Text style={{ color: colors.danger, fontSize: 18 }}>🗑️</Text>
-                        </TouchableOpacity>
+                        <Feather name="chevron-left" size={20} color={colors.textMuted} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={[styles.settingRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+                        <View style={styles.settingIconText}>
+                            <View style={[styles.iconWrapper, { backgroundColor: colors.primaryGlow }]}>
+                                <Feather name="mail" size={20} color={colors.primary} />
+                            </View>
+                            <Text style={[styles.settingText, { color: colors.textPrimary }]}>تماس با پشتیبانی</Text>
+                        </View>
+                        <Feather name="chevron-left" size={20} color={colors.textMuted} />
+                    </TouchableOpacity>
+
+                    <View style={styles.settingRow}>
+                        <View style={styles.settingIconText}>
+                            <View style={[styles.iconWrapper, { backgroundColor: colors.primaryGlow }]}>
+                                <Feather name="info" size={20} color={colors.primary} />
+                            </View>
+                            <Text style={[styles.settingText, { color: colors.textPrimary }]}>نسخه برنامه</Text>
+                        </View>
+                        <Text style={{ color: colors.textMuted, fontSize: 14 }}>۱.۰.۰</Text>
                     </View>
-                ))}
+                </View>
+
+                {/* امضای توسعه‌دهنده */}
+                <View style={{ alignItems: 'center', marginTop: 40, marginBottom: 20 }}>
+                    <Text style={{ color: colors.textMuted, fontSize: 12 }}>توسعه یافته با ❤️ برای نظم بیشتر</Text>
+                </View>
+
             </ScrollView>
         </View>
     );
@@ -89,24 +130,15 @@ export default function SettingsScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingTop: 40, borderWidth: 1, borderTopWidth: 0, borderLeftWidth: 0, borderRightWidth: 0 },
-    backBtn: { padding: 5 },
-    headerTitle: { fontSize: 18, fontWeight: 'bold' },
+    headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 },
+    pageTitle: { fontSize: 24, fontWeight: 'bold' },
     
-    card: { padding: 20, borderRadius: 16, borderWidth: 1, marginBottom: 25, elevation: 2 },
-    cardTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 15, textAlign: 'right' },
-    input: { borderWidth: 1, padding: 12, borderRadius: 10, fontSize: 16, textAlign: 'right', marginBottom: 15 },
-    subTitle: { fontSize: 14, marginBottom: 10, textAlign: 'right' },
+    sectionTitle: { fontSize: 13, fontWeight: 'bold', marginBottom: 10, marginLeft: 10 },
     
-    colorRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', marginBottom: 20, gap: 10 },
-    colorCircle: { width: 35, height: 35, borderRadius: 18 },
+    card: { borderRadius: 20, borderWidth: 1, overflow: 'hidden', marginBottom: 10 },
+    settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 },
+    settingIconText: { flexDirection: 'row', alignItems: 'center' },
     
-    addBtn: { padding: 14, borderRadius: 10, alignItems: 'center', elevation: 3 },
-    addBtnText: { color: 'white', fontWeight: 'bold', fontSize: 15 },
-
-    sectionTitle: { fontSize: 15, fontWeight: 'bold', marginBottom: 10, textAlign: 'right' },
-    catRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderRadius: 12, borderWidth: 1, marginBottom: 10 },
-    catInfo: { flexDirection: 'row', alignItems: 'center' },
-    catDot: { width: 12, height: 12, borderRadius: 6, marginLeft: 10 }, // margin left بخاطر راست چین بودن
-    catName: { fontSize: 16, fontWeight: '500' }
+    iconWrapper: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginLeft: 12 },
+    settingText: { fontSize: 15, fontWeight: '500' }
 });

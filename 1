@@ -1,0 +1,23 @@
+workflows:
+  android-apk-build:
+    name: Build Android APK (Simple)
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    environment:
+      node: 20
+      java: 17
+    scripts:
+      - name: Set Android SDK location
+        script: | 
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Install npm dependencies
+        script: | 
+          npm install --legacy-peer-deps
+      - name: Build Android APK
+        script: | 
+          sed -i '' 's/\${usesCleartextTraffic}/true/g' android/app/src/main/AndroidManifest.xml || true
+          cd android
+          chmod +x ./gradlew
+          ./gradlew assembleRelease
+    artifacts:
+      - android/app/build/outputs/**/*.apk

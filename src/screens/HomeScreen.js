@@ -1,27 +1,20 @@
-import React, { useContext, useState, useMemo, useEffect } from 'react';
+import React, { useContext, useState, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Alert } from 'react-native';
 import { TodoContext } from '../context/TodoContext';
 import { lightTheme, darkTheme } from '../theme/AuraTheme';
-import { TAPSELL_ZONE_ID } from '@env';
-
-// 1. ایمپورت کردن کامپوننت‌های تپسل
-import { TapsellPlus, TapsellPlusBannerType, TapsellPlusHorizontalGravity, TapsellPlusVerticalGravity } from 'react-native-tapsell-plus';
+import Feather from 'react-native-vector-icons/Feather';
 
 export default function HomeScreen({ navigation, dark, setDark }) {
     const { todos, categories, addTodo, toggleTodo, deleteTodo } = useContext(TodoContext);
     const theme = dark ? darkTheme : lightTheme;
     const { colors } = theme;
 
-    // استیت‌های فرم ایجاد
     const [title, setTitle] = useState('');
-    const [priority, setPriority] = useState('medium'); // پیش‌فرض روی حالت عادی
-    const [selectedCategory, setSelectedCategory] = useState('personal'); // دسته‌بندی پیش‌فرض
+    const [priority, setPriority] = useState('medium');
+    const [selectedCategory, setSelectedCategory] = useState('personal');
+    const [filter, setFilter] = useState('active');
 
-    // استیت‌های فیلتر
-    const [filter, setFilter] = useState('active'); // وضعیت پیش‌فرض تغییر کرد به "در حال انجام"
-    const [categoryFilter, setCategoryFilter] = useState('all'); // فیلتر دسته‌بندی
-
-    // محاسبه آمار
+    // محاسبه آمار دقیقا مطابق طراحی عکس
     const stats = useMemo(() => {
         const total = todos.length;
         const completed = todos.filter(t => t.completed).length;
@@ -30,40 +23,11 @@ export default function HomeScreen({ navigation, dark, setDark }) {
         return { total, completed, active, percent };
     }, [todos]);
 
-    // فیلتر کردن لیستِ کارها بر اساس وضعیت و دسته‌بندی
     const filteredTodos = todos.filter(t => {
         const matchStatus = filter === 'active' ? !t.completed : (filter === 'completed' ? t.completed : true);
-        const matchCategory = categoryFilter === 'all' ? true : t.category === categoryFilter;
-        return matchStatus && matchCategory;
+        return matchStatus;
     });
 
-    useEffect(() => {
-        let currentBannerId = null;
-        TapsellPlus.requestStandardBannerAd(TAPSELL_ZONE_ID, TapsellPlusBannerType.BANNER_320x50)
-            .then((responseId) => {
-                currentBannerId = responseId;
-                // نمایش بنر در پایین (BOTTOM) و مرکز (CENTER) صفحه
-                TapsellPlus.showStandardBannerAd(
-                    responseId,
-                    TapsellPlusHorizontalGravity.BOTTOM,
-                    TapsellPlusVerticalGravity.CENTER,
-                    (data) => console.log("Banner Opened successfully"),
-                    (error) => console.log("Error showing banner:", error)
-                );
-            })
-            .catch(error => {
-                console.log("Error requesting banner:", error);
-            });
-
-        // وقتی کاربر از برنامه خارج می‌شود، تبلیغ را می‌بندیم تا رم گوشی پر نشود
-        return () => {
-            if (currentBannerId) {
-                TapsellPlus.destroyStandardBannerAd(currentBannerId);
-            }
-        };
-    }, []);
-
-    // اضافه کردن کار جدید
     const handleAdd = () => {
         if (title.trim()) {
             addTodo(title, '', selectedCategory, priority);
@@ -71,182 +35,127 @@ export default function HomeScreen({ navigation, dark, setDark }) {
         }
     };
 
-    // هشدار تایید قبل از حذف
     const confirmDelete = (id) => {
         Alert.alert(
             "حذف کار",
-            "آیا مطمئن هستید که می‌خواهید این کار را برای همیشه پاک کنید؟",
+            "آیا مطمئن هستید که می‌خواهید این کار را پاک کنید؟",
             [
-                { text: "خیر، دستم خورد", style: "cancel" },
-                { text: "بله، پاک شود", onPress: () => deleteTodo(id), style: "destructive" }
+                { text: "خیر", style: "cancel" },
+                { text: "بله", onPress: () => deleteTodo(id), style: "destructive" }
             ],
             { cancelable: true }
         );
     };
 
+    // دریافت تاریخ امروز به صورت شمسی
+    const todayDate = new Intl.DateTimeFormat('fa-IR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+
     return (
         <View style={[styles.container, { backgroundColor: colors.bgApp }]}>
             <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} backgroundColor={colors.bgApp} />
 
-            {/* یک پدینگ 80 تایی به پایین دادیم تا بنر تبلیغاتی روی آیتم آخر نیفتد */}
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 80 }}>
-
-                {/* هدر اپلیکیشن */}
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+                
+                {/* هدر صفحه: مطابق طراحی جدید */}
                 <View style={styles.header}>
-                    <View style={styles.logoRow}>
-                        <View style={[styles.logoIcon, { backgroundColor: colors.primary }]}>
-                            <Text style={styles.logoText}>کارم</Text>
+                    <View>
+                        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>امروز</Text>
+                        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>{todayDate}</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                        <TouchableOpacity onPress={() => setDark(!dark)} style={[styles.iconBtn, { backgroundColor: colors.bgCard }]}>
+                            <Feather name={dark ? 'sun' : 'moon'} size={20} color={colors.textPrimary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.bgCard }]}>
+                            <Feather name="search" size={20} color={colors.textPrimary} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* کارت خلاصه امروز */}
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>خلاصه امروز</Text>
+                <View style={[styles.summaryCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                    
+                    {/* حلقه پیشرفت (ساده‌سازی شده با استایل) */}
+                    <View style={styles.progressCircleContainer}>
+                        <View style={[styles.progressCircle, { borderColor: colors.primary }]}>
+                            <Text style={[styles.progressPercent, { color: colors.primary }]}>{stats.percent}٪</Text>
+                            <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>پیشرفت امروز</Text>
                         </View>
-                        <Text style={[styles.appName, { color: colors.textPrimary }]}>مدیریت کارهای روزمره</Text>
                     </View>
 
-                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                        <TouchableOpacity onPress={() => navigation.navigate('Settings', { dark })} style={[styles.themeBtn, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                            <Text style={{ fontSize: 20 }}>⚙️</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setDark(!dark)} style={[styles.themeBtn, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                            <Text style={{ fontSize: 20 }}>{dark ? '☀️' : '🌙'}</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                {/* کارت‌های آماری */}
-                <View style={styles.statsGrid}>
-                    <View style={[styles.statCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                        <Text style={[styles.statLabel, { color: colors.textSecondary }]}>کارهای فعال</Text>
-                        <Text style={[styles.statValue, { color: colors.textPrimary }]}>{stats.active}</Text>
-                    </View>
-                    <View style={[styles.statCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                        <Text style={[styles.statLabel, { color: colors.textSecondary }]}>پیشرفت</Text>
-                        <Text style={[styles.statValue, { color: colors.success }]}>{stats.percent}٪</Text>
-                    </View>
-                </View>
-
-                {/* فرم افزودن کار جدید */}
-                <View style={[styles.formCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                    <TextInput
-                        value={title}
-                        onChangeText={setTitle}
-                        placeholder="چه کاری باید انجام شود؟"
-                        placeholderTextColor={colors.textMuted}
-                        style={[styles.input, { color: colors.textPrimary, backgroundColor: colors.bgApp, borderColor: colors.border }]}
-                    />
-
-                    {/* انتخاب دسته‌بندی در فرم - وسط‌چین/راست‌چین شده */}
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catSelectScroll} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
-                        {categories.map(cat => (
-                            <TouchableOpacity
-                                key={cat.id}
-                                onPress={() => setSelectedCategory(cat.id)}
-                                style={[styles.catChip, {
-                                    backgroundColor: selectedCategory === cat.id ? cat.color : colors.bgApp,
-                                    borderColor: selectedCategory === cat.id ? cat.color : colors.border
-                                }]}>
-                                <Text style={{ color: selectedCategory === cat.id ? '#fff' : colors.textSecondary, fontSize: 12, fontWeight: selectedCategory === cat.id ? 'bold' : 'normal' }}>
-                                    {cat.name}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-
-                    <View style={styles.formRow}>
-                        {/* دکمه‌های اولویت: مجزا شده برای حالت‌های عادی و فوری */}
-                        <View style={{ flexDirection: 'row', gap: 8 }}>
-                            <TouchableOpacity
-                                onPress={() => setPriority('medium')}
-                                style={[styles.priorityBadge, { backgroundColor: priority === 'medium' ? colors.primary + '20' : colors.bgApp, borderColor: priority === 'medium' ? colors.primary : colors.border }]}>
-                                <Text style={{ color: priority === 'medium' ? colors.primary : colors.textSecondary, fontSize: 13, fontWeight: priority === 'medium' ? 'bold' : 'normal' }}>
-                                    عادی
-                                </Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                onPress={() => setPriority('high')}
-                                style={[styles.priorityBadge, { backgroundColor: priority === 'high' ? colors.dangerBg : colors.bgApp, borderColor: priority === 'high' ? colors.danger : colors.border }]}>
-                                <Text style={{ color: priority === 'high' ? colors.danger : colors.textSecondary, fontSize: 13, fontWeight: priority === 'high' ? 'bold' : 'normal' }}>
-                                    فوری
-                                </Text>
-                            </TouchableOpacity>
+                    {/* باکس‌های آماری زیر نمودار */}
+                    <View style={styles.statsRow}>
+                        <View style={[styles.statBox, { backgroundColor: colors.bgApp, borderColor: colors.border }]}>
+                            <Text style={[styles.statValue, { color: colors.textPrimary }]}>{stats.total}</Text>
+                            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>کل وظایف</Text>
                         </View>
-
-                        <TouchableOpacity onPress={handleAdd} style={[styles.addBtn, { backgroundColor: colors.primary }]}>
-                            <Text style={styles.addBtnText}>+ ایجاد کار</Text>
-                        </TouchableOpacity>
+                        <View style={[styles.statBox, { backgroundColor: colors.bgApp, borderColor: colors.border }]}>
+                            <Text style={[styles.statValue, { color: colors.primary }]}>{stats.completed}</Text>
+                            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>انجام شده</Text>
+                        </View>
+                        <View style={[styles.statBox, { backgroundColor: colors.bgApp, borderColor: colors.border }]}>
+                            <Text style={[styles.statValue, { color: colors.textPrimary }]}>{stats.active}</Text>
+                            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>باقی‌مانده</Text>
+                        </View>
                     </View>
                 </View>
 
-                {/* فیلتر وضعیت (اسکرول افقی) - وسط‌چین/راست‌چین شده */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
-                    {['all', 'active', 'completed'].map((f) => (
-                        <TouchableOpacity
-                            key={f} onPress={() => setFilter(f)}
-                            style={[styles.filterBtn, {
-                                backgroundColor: filter === f ? colors.primaryGlow : colors.bgCard,
-                                borderColor: filter === f ? colors.primary : colors.border
-                            }]}>
-                            <Text style={{ color: filter === f ? colors.primary : colors.textSecondary, fontWeight: filter === f ? 'bold' : 'normal', fontSize: 13 }}>
-                                {f === 'all' ? 'همه کارها' : f === 'active' ? 'در حال انجام' : 'تکمیل شده'}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-
-                {/* فیلتر دسته‌بندی (اسکرول افقی) - وسط‌چین/راست‌چین شده */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.filtersScroll, { marginBottom: 20 }]} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
-                    <TouchableOpacity
-                        onPress={() => setCategoryFilter('all')}
-                        style={[styles.filterBtn, { paddingVertical: 6, backgroundColor: categoryFilter === 'all' ? colors.primaryGlow : colors.bgCard, borderColor: categoryFilter === 'all' ? colors.primary : colors.border }]}>
-                        <Text style={{ color: categoryFilter === 'all' ? colors.primary : colors.textSecondary, fontSize: 12 }}>همه دسته‌ها</Text>
-                    </TouchableOpacity>
-                    {categories.map((c) => (
-                        <TouchableOpacity
-                            key={c.id} onPress={() => setCategoryFilter(c.id)}
-                            style={[styles.filterBtn, { paddingVertical: 6, backgroundColor: categoryFilter === c.id ? c.color + '20' : colors.bgCard, borderColor: categoryFilter === c.id ? c.color : colors.border }]}>
-                            <Text style={{ color: categoryFilter === c.id ? c.color : colors.textSecondary, fontSize: 12, fontWeight: categoryFilter === c.id ? 'bold' : 'normal' }}>
-                                {c.name}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
+                {/* بخش وظایف امروز */}
+                <View style={styles.tasksHeaderRow}>
+                    <Text style={[styles.sectionTitle, { color: colors.textPrimary, marginBottom: 0 }]}>وظایف امروز</Text>
+                    <Feather name="chevron-left" size={20} color={colors.textSecondary} />
+                </View>
 
                 {/* لیست کارها */}
-                {filteredTodos.map(todo => {
-                    const cat = categories.find(c => c.id === todo.category);
-                    return (
-                        <View key={todo.id} style={[styles.taskCard, {
-                            backgroundColor: colors.bgCard,
-                            borderColor: todo.completed ? colors.success : colors.border,
-                            opacity: todo.completed ? 0.7 : 1
-                        }]}>
-                            <View style={[styles.categoryIndicator, { backgroundColor: cat?.color || colors.border }]} />
-
-                            <TouchableOpacity onPress={() => toggleTodo(todo.id)} style={styles.checkboxArea}>
-                                <View style={[styles.checkbox, { borderColor: todo.completed ? colors.success : colors.textMuted, backgroundColor: todo.completed ? colors.success : 'transparent' }]}>
-                                    {todo.completed && <Text style={{ color: 'white', fontSize: 10 }}>✓</Text>}
+                {filteredTodos.length === 0 ? (
+                    <Text style={{ textAlign: 'center', color: colors.textMuted, marginTop: 20 }}>وظیفه‌ای برای نمایش وجود ندارد.</Text>
+                ) : (
+                    filteredTodos.map(todo => (
+                        <View key={todo.id} style={[styles.taskItem, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                            <TouchableOpacity onPress={() => toggleTodo(todo.id)} style={styles.checkboxWrapper}>
+                                <View style={[styles.checkbox, { 
+                                    borderColor: todo.completed ? colors.primary : colors.textMuted,
+                                    backgroundColor: todo.completed ? colors.primary : 'transparent' 
+                                }]}>
+                                    {todo.completed && <Feather name="check" size={12} color="#FFF" />}
                                 </View>
                             </TouchableOpacity>
 
-                            <View style={styles.taskContent}>
-                                <Text style={[styles.taskTitle, {
+                            <View style={styles.taskTextContainer}>
+                                <Text style={[styles.taskTitle, { 
                                     color: todo.completed ? colors.textMuted : colors.textPrimary,
                                     textDecorationLine: todo.completed ? 'line-through' : 'none'
                                 }]}>
                                     {todo.title}
                                 </Text>
-                                <View style={styles.badgesRow}>
-                                    <Text style={[styles.miniBadge, { backgroundColor: colors.bgApp, color: colors.textSecondary }]}>{cat?.name}</Text>
-                                    {todo.priority === 'high' && (
-                                        <Text style={[styles.miniBadge, { backgroundColor: colors.dangerBg, color: colors.danger }]}>فوری</Text>
-                                    )}
-                                </View>
                             </View>
 
-                            <TouchableOpacity onPress={() => confirmDelete(todo.id)} style={styles.deleteBtn}>
-                                <Text style={{ color: colors.danger, fontSize: 18 }}>🗑️</Text>
+                            {todo.priority === 'high' && (
+                                <Feather name="star" size={16} color={colors.accent} style={{ marginLeft: 10 }} />
+                            )}
+
+                            <TouchableOpacity onPress={() => confirmDelete(todo.id)} style={{ padding: 5, marginLeft: 10 }}>
+                                <Feather name="trash-2" size={16} color={colors.danger} />
                             </TouchableOpacity>
                         </View>
-                    );
-                })}
+                    ))
+                )}
+
+                {/* فرم افزودن سریع وظیفه در پایین لیست */}
+                <View style={[styles.quickAddContainer, { borderColor: colors.primary }]}>
+                    <TouchableOpacity onPress={handleAdd} style={styles.quickAddBtn}>
+                        <Feather name="plus" size={20} color={colors.primary} />
+                    </TouchableOpacity>
+                    <TextInput
+                        value={title}
+                        onChangeText={setTitle}
+                        placeholder="افزودن وظیفه..."
+                        placeholderTextColor={colors.textMuted}
+                        style={[styles.quickAddInput, { color: colors.textPrimary }]}
+                        onSubmitEditing={handleAdd}
+                    />
+                </View>
 
             </ScrollView>
         </View>
@@ -256,36 +165,32 @@ export default function HomeScreen({ navigation, dark, setDark }) {
 const styles = StyleSheet.create({
     container: { flex: 1 },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
-    logoRow: { flexDirection: 'row', alignItems: 'center' },
-    logoIcon: { width: 40, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center', elevation: 4 },
-    logoText: { color: 'white', fontSize: 15, fontWeight: 'bold' },
-    appName: { fontSize: 20, fontWeight: 'bold', marginLeft: 10 },
-    themeBtn: { width: 45, height: 45, borderRadius: 25, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
+    headerTitle: { fontSize: 24, fontWeight: 'bold', marginBottom: 4 },
+    headerSubtitle: { fontSize: 13 },
+    iconBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 2 } },
+    
+    sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 15 },
+    
+    summaryCard: { padding: 20, borderRadius: 24, borderWidth: 1, marginBottom: 30, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 4 } },
+    progressCircleContainer: { alignItems: 'center', marginBottom: 25 },
+    progressCircle: { width: 140, height: 140, borderRadius: 70, borderWidth: 8, justifyContent: 'center', alignItems: 'center' },
+    progressPercent: { fontSize: 28, fontWeight: 'bold' },
+    progressLabel: { fontSize: 12, marginTop: 4 },
+    
+    statsRow: { flexDirection: 'row', justifyContent: 'space-between' },
+    statBox: { flex: 0.31, paddingVertical: 15, borderRadius: 16, borderWidth: 1, alignItems: 'center' },
+    statValue: { fontSize: 18, fontWeight: 'bold', marginBottom: 5 },
+    statLabel: { fontSize: 11 },
 
-    statsGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-    statCard: { flex: 0.48, padding: 15, borderRadius: 16, borderWidth: 1, elevation: 1 },
-    statLabel: { fontSize: 13, marginBottom: 5, fontWeight: '500' },
-    statValue: { fontSize: 26, fontWeight: 'bold' },
-
-    formCard: { padding: 15, borderRadius: 16, borderWidth: 1, marginBottom: 20, elevation: 2 },
-    input: { borderWidth: 1, padding: 12, borderRadius: 10, fontSize: 16, textAlign: 'right', marginBottom: 12 },
-    catSelectScroll: { flexDirection: 'row', marginBottom: 15 },
-    catChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, marginHorizontal: 4 }, // marginHorizontal جایگزین marginRight شد تا وسط‌چین زیباتر شود
-    formRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    priorityBadge: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1 }, // پدینگ کمی کمتر شد تا هر دو دکمه جا شوند
-    addBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10, elevation: 3 },
-    addBtnText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
-
-    filtersScroll: { flexDirection: 'row', marginBottom: 10 },
-    filterBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, marginHorizontal: 4, justifyContent: 'center' }, // marginHorizontal برای تقارن بهتر اضافه شد
-
-    taskCard: { flexDirection: 'row', padding: 15, borderRadius: 14, borderWidth: 1, marginBottom: 12, alignItems: 'center', overflow: 'hidden' },
-    categoryIndicator: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 5 },
-    checkboxArea: { paddingHorizontal: 10 },
+    tasksHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+    
+    taskItem: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, borderWidth: 1, marginBottom: 10 },
+    checkboxWrapper: { marginRight: 12 },
     checkbox: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
-    taskContent: { flex: 1, paddingHorizontal: 10 },
-    taskTitle: { fontSize: 16, fontWeight: '600', marginBottom: 6, textAlign: 'right' },
-    badgesRow: { flexDirection: 'row', justifyContent: 'flex-start' },
-    miniBadge: { fontSize: 11, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginRight: 5, overflow: 'hidden' },
-    deleteBtn: { padding: 8 }
+    taskTextContainer: { flex: 1 },
+    taskTitle: { fontSize: 15, fontWeight: '500', textAlign: 'right' },
+
+    quickAddContainer: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, paddingVertical: 5, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', marginTop: 10 },
+    quickAddBtn: { padding: 10 },
+    quickAddInput: { flex: 1, height: 50, fontSize: 15, textAlign: 'right' }
 });
