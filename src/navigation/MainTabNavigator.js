@@ -12,6 +12,8 @@ import SettingsScreen from '../screens/SettingsScreen';
 import { lightTheme, darkTheme } from '../theme/AuraTheme';
 import { TodoContext } from '../context/TodoContext';
 
+const EmptyScreen = () => null;
+
 const Tab = createBottomTabNavigator();
 const screenHeight = Dimensions.get('window').height;
 
@@ -26,24 +28,24 @@ const CustomTabBarButton = ({ children, onPress, colors }) => (
 export default function MainTabNavigator({ dark, setDark }) {
     const theme = dark ? darkTheme : lightTheme;
     const { colors } = theme;
-    
+
     const { addTodo, categories } = useContext(TodoContext);
     const [isModalVisible, setModalVisible] = useState(false);
-    
+
     // استیت‌های فرم ایجاد وظیفه جدید
     const [newTaskTitle, setNewTaskTitle] = useState('');
     const [newTaskPriority, setNewTaskPriority] = useState('medium');
     const [newTaskCat, setNewTaskCat] = useState('personal');
-    const [selectedDate, setSelectedDate] = useState(new Date().setHours(0,0,0,0));
+    const [selectedDate, setSelectedDate] = useState(new Date().setHours(0, 0, 0, 0));
     const [selectedTime, setSelectedTime] = useState('بدون زمان');
 
     // تولید 7 روز آینده برای انتخاب تقویم
     const upcomingDays = useMemo(() => {
         const days = [];
-        for(let i=0; i<7; i++) {
+        for (let i = 0; i < 7; i++) {
             const d = new Date();
             d.setDate(d.getDate() + i);
-            const ts = d.setHours(0,0,0,0);
+            const ts = d.setHours(0, 0, 0, 0);
             const dayName = i === 0 ? 'امروز' : (i === 1 ? 'فردا' : new Intl.DateTimeFormat('fa-IR', { weekday: 'long' }).format(d));
             days.push({ label: dayName, value: ts });
         }
@@ -94,9 +96,14 @@ export default function MainTabNavigator({ dark, setDark }) {
                 <Tab.Screen name="CalendarTab" options={{ tabBarIcon: ({ focused }) => <Feather name="calendar" size={24} color={focused ? colors.primary : colors.textMuted} /> }}>
                     {props => <CalendarScreen {...props} dark={dark} setDark={setDark} />}
                 </Tab.Screen>
-                <Tab.Screen name="AddTab" component={View}
+                <Tab.Screen
+                    name="AddTab"
+                    component={EmptyScreen} // این خط تغییر کرد
                     listeners={{ tabPress: (e) => { e.preventDefault(); setModalVisible(true); } }}
-                    options={{ tabBarIcon: () => <Feather name="plus" size={32} color="#FFF" />, tabBarButton: (props) => <CustomTabBarButton {...props} colors={colors} /> }}
+                    options={{
+                        tabBarIcon: () => <Feather name="plus" size={32} color="#FFF" />,
+                        tabBarButton: (props) => <CustomTabBarButton {...props} colors={colors} />
+                    }}
                 />
                 <Tab.Screen name="ReportsTab" options={{ tabBarIcon: ({ focused }) => <Feather name="bar-chart-2" size={24} color={focused ? colors.primary : colors.textMuted} /> }}>
                     {props => <ReportsScreen {...props} dark={dark} />}
