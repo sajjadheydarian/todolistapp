@@ -7,7 +7,7 @@ import SettingsScreen from './src/screens/SettingsScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import { TodoProvider } from './src/context/TodoContext';
 import { lightTheme, darkTheme } from './src/theme/AuraTheme';
-import Config from "react-native-config";
+import { TAPSELL_APP_KEY } from '@env';
 
 // ۱. اضافه کردن کتابخانه تپسل
 import { TapsellPlus } from 'react-native-tapsell-plus';
@@ -15,7 +15,7 @@ import { TapsellPlus } from 'react-native-tapsell-plus';
 
 // ۳. روشن کردن موتور تپسل در فضای سراسری (قبل از اینکه صفحات ساخته شوند)
 
-TapsellPlus.initialize(Config.TAPSELL_APP_KEY);
+TapsellPlus.initialize(TAPSELL_APP_KEY);
 TapsellPlus.setGDPRConsent(true);
 
 const Stack = createNativeStackNavigator();

@@ -2,7 +2,7 @@ import React, { useContext, useState, useMemo, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Alert } from 'react-native';
 import { TodoContext } from '../context/TodoContext';
 import { lightTheme, darkTheme } from '../theme/AuraTheme';
-import Config from "react-native-config";
+import { TAPSELL_ZONE_ID } from '@env';
 
 // 1. ایمپورت کردن کامپوننت‌های تپسل
 import { TapsellPlus, TapsellPlusBannerType, TapsellPlusHorizontalGravity, TapsellPlusVerticalGravity } from 'react-native-tapsell-plus';
@@ -42,7 +42,7 @@ export default function HomeScreen({ navigation, dark, setDark }) {
 
     useEffect(() => {
         let currentBannerId = null;
-        TapsellPlus.requestStandardBannerAd(Config.TAPSELL_ZONE_ID, TapsellPlusBannerType.BANNER_320x50)
+        TapsellPlus.requestStandardBannerAd(TAPSELL_ZONE_ID, TapsellPlusBannerType.BANNER_320x50)
             .then((responseId) => {
                 currentBannerId = responseId;
                 // نمایش بنر در پایین (BOTTOM) و مرکز (CENTER) صفحه
