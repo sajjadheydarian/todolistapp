@@ -14,11 +14,11 @@ export default function HomeScreen({ navigation, dark, setDark }) {
 
     // استیت‌های فرم ایجاد
     const [title, setTitle] = useState('');
-    const [priority, setPriority] = useState('medium');
+    const [priority, setPriority] = useState('medium'); // پیش‌فرض روی حالت عادی
     const [selectedCategory, setSelectedCategory] = useState('personal'); // دسته‌بندی پیش‌فرض
 
     // استیت‌های فیلتر
-    const [filter, setFilter] = useState('all'); // وضعیت انجام کار
+    const [filter, setFilter] = useState('active'); // وضعیت پیش‌فرض تغییر کرد به "در حال انجام"
     const [categoryFilter, setCategoryFilter] = useState('all'); // فیلتر دسته‌بندی
 
     // محاسبه آمار
@@ -36,9 +36,6 @@ export default function HomeScreen({ navigation, dark, setDark }) {
         const matchCategory = categoryFilter === 'all' ? true : t.category === categoryFilter;
         return matchStatus && matchCategory;
     });
-
-    
-    
 
     useEffect(() => {
         let currentBannerId = null;
@@ -135,8 +132,8 @@ export default function HomeScreen({ navigation, dark, setDark }) {
                         style={[styles.input, { color: colors.textPrimary, backgroundColor: colors.bgApp, borderColor: colors.border }]}
                     />
 
-                    {/* انتخاب دسته‌بندی در فرم */}
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catSelectScroll}>
+                    {/* انتخاب دسته‌بندی در فرم - وسط‌چین/راست‌چین شده */}
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catSelectScroll} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
                         {categories.map(cat => (
                             <TouchableOpacity
                                 key={cat.id}
@@ -153,13 +150,24 @@ export default function HomeScreen({ navigation, dark, setDark }) {
                     </ScrollView>
 
                     <View style={styles.formRow}>
-                        <TouchableOpacity
-                            onPress={() => setPriority(priority === 'high' ? 'medium' : 'high')}
-                            style={[styles.priorityBadge, { backgroundColor: priority === 'high' ? colors.dangerBg : colors.bgApp, borderColor: priority === 'high' ? colors.danger : colors.border }]}>
-                            <Text style={{ color: priority === 'high' ? colors.danger : colors.textSecondary, fontSize: 13 }}>
-                                {priority === 'high' ? 'فوری' : 'عادی'}
-                            </Text>
-                        </TouchableOpacity>
+                        {/* دکمه‌های اولویت: مجزا شده برای حالت‌های عادی و فوری */}
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                            <TouchableOpacity
+                                onPress={() => setPriority('medium')}
+                                style={[styles.priorityBadge, { backgroundColor: priority === 'medium' ? colors.primary + '20' : colors.bgApp, borderColor: priority === 'medium' ? colors.primary : colors.border }]}>
+                                <Text style={{ color: priority === 'medium' ? colors.primary : colors.textSecondary, fontSize: 13, fontWeight: priority === 'medium' ? 'bold' : 'normal' }}>
+                                    عادی
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                onPress={() => setPriority('high')}
+                                style={[styles.priorityBadge, { backgroundColor: priority === 'high' ? colors.dangerBg : colors.bgApp, borderColor: priority === 'high' ? colors.danger : colors.border }]}>
+                                <Text style={{ color: priority === 'high' ? colors.danger : colors.textSecondary, fontSize: 13, fontWeight: priority === 'high' ? 'bold' : 'normal' }}>
+                                    فوری
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
 
                         <TouchableOpacity onPress={handleAdd} style={[styles.addBtn, { backgroundColor: colors.primary }]}>
                             <Text style={styles.addBtnText}>+ ایجاد کار</Text>
@@ -167,8 +175,8 @@ export default function HomeScreen({ navigation, dark, setDark }) {
                     </View>
                 </View>
 
-                {/* فیلتر وضعیت (اسکرول افقی) */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
+                {/* فیلتر وضعیت (اسکرول افقی) - وسط‌چین/راست‌چین شده */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
                     {['all', 'active', 'completed'].map((f) => (
                         <TouchableOpacity
                             key={f} onPress={() => setFilter(f)}
@@ -183,8 +191,8 @@ export default function HomeScreen({ navigation, dark, setDark }) {
                     ))}
                 </ScrollView>
 
-                {/* فیلتر دسته‌بندی (اسکرول افقی) */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.filtersScroll, { marginBottom: 20 }]}>
+                {/* فیلتر دسته‌بندی (اسکرول افقی) - وسط‌چین/راست‌چین شده */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.filtersScroll, { marginBottom: 20 }]} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
                     <TouchableOpacity
                         onPress={() => setCategoryFilter('all')}
                         style={[styles.filterBtn, { paddingVertical: 6, backgroundColor: categoryFilter === 'all' ? colors.primaryGlow : colors.bgCard, borderColor: categoryFilter === 'all' ? colors.primary : colors.border }]}>
@@ -262,14 +270,14 @@ const styles = StyleSheet.create({
     formCard: { padding: 15, borderRadius: 16, borderWidth: 1, marginBottom: 20, elevation: 2 },
     input: { borderWidth: 1, padding: 12, borderRadius: 10, fontSize: 16, textAlign: 'right', marginBottom: 12 },
     catSelectScroll: { flexDirection: 'row', marginBottom: 15 },
-    catChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, marginRight: 8 },
+    catChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, marginHorizontal: 4 }, // marginHorizontal جایگزین marginRight شد تا وسط‌چین زیباتر شود
     formRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    priorityBadge: { paddingHorizontal: 15, paddingVertical: 10, borderRadius: 8, borderWidth: 1 },
+    priorityBadge: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1 }, // پدینگ کمی کمتر شد تا هر دو دکمه جا شوند
     addBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10, elevation: 3 },
     addBtnText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
 
     filtersScroll: { flexDirection: 'row', marginBottom: 10 },
-    filterBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, marginRight: 8, justifyContent: 'center' },
+    filterBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, marginHorizontal: 4, justifyContent: 'center' }, // marginHorizontal برای تقارن بهتر اضافه شد
 
     taskCard: { flexDirection: 'row', padding: 15, borderRadius: 14, borderWidth: 1, marginBottom: 12, alignItems: 'center', overflow: 'hidden' },
     categoryIndicator: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 5 },
