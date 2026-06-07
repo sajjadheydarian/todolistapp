@@ -1,34 +1,44 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
 import { TodoContext } from '../context/TodoContext';
 import { lightTheme, darkTheme } from '../theme/AuraTheme';
 
-export default function CalendarScreen({ dark, setDark }) {
-    const { todos } = useContext(TodoContext);
+export default function CalendarScreen({ dark }) {
+    const { todos, toggleTodo } = useContext(TodoContext);
     const theme = dark ? darkTheme : lightTheme;
     const { colors } = theme;
 
-    // استیت برای روز انتخاب شده (به صورت نمایشی برای رابط کاربری)
-    const [selectedDate, setSelectedDate] = useState(25);
+    // استیت برای روز انتخاب شده (پیش‌فرض: شروع امروز)
+    const [selectedDate, setSelectedDate] = useState(new Date().setHours(0,0,0,0));
 
-    // روزهای هفته به صورت نمونه برای پیاده‌سازی UI مطابق عکس
-    const weekDays = [
-        { day: 'ش', date: 25 },
-        { day: 'ی', date: 26 },
-        { day: 'د', date: 27 },
-        { day: 'س', date: 28 },
-        { day: 'چ', date: 29 },
-        { day: 'پ', date: 30 },
-        { day: 'ج', date: 31 },
-    ];
+    // تولید تقویم شمسی پویا (از ۲ روز قبل تا ۴ روز آینده برای ظاهر زیباتر)
+    const calendarDays = useMemo(() => {
+        const days = [];
+        for(let i = -2; i <= 4; i++) {
+            const d = new Date();
+            d.setDate(d.getDate() + i);
+            const ts = d.setHours(0,0,0,0);
+            
+            const dayChar = new Intl.DateTimeFormat('fa-IR', { weekday: 'narrow' }).format(d);
+            const dayNum = new Intl.DateTimeFormat('fa-IR', { day: 'numeric' }).format(d);
+            
+            days.push({ day: dayChar, dateText: dayNum, timestamp: ts });
+        }
+        return days;
+    }, []);
 
-    // در یک اپلیکیشن واقعی، اینجا کارها را بر اساس selectedDate فیلتر می‌کنیم
-    // اما فعلاً برای نمایش، تمام کارهای موجود را در تایم‌لاین نشان می‌دهیم
-    const dailyTodos = todos;
+    // نام ماه و سال جاری به شمسی برای هدر
+    const currentMonthYear = new Intl.DateTimeFormat('fa-IR', { month: 'long', year: 'numeric' }).format(new Date());
 
-    // تولید یک زمان فرضی برای نمایش در تایم‌لاین (چون فعلاً کارهایمان زمان دقیق ندارند)
-    const mockTimes = ['۰۸:۰۰', '۰۹:۳۰', '۱۱:۰۰', '۱۵:۰۰', '۱۸:۰۰', '۲۰:۰۰'];
+    // فیلتر کارهای مربوط به روز انتخاب شده و مرتب‌سازی بر اساس زمان
+    const dailyTodos = todos
+        .filter(t => t.date === selectedDate)
+        .sort((a, b) => {
+            if (!a.time) return 1;
+            if (!b.time) return -1;
+            return a.time.localeCompare(b.time); // مرتب‌سازی صعودی بر اساس ساعت
+        });
 
     return (
         <View style={[styles.container, { backgroundColor: colors.bgApp }]}>
@@ -36,74 +46,68 @@ export default function CalendarScreen({ dark, setDark }) {
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
                 
-                {/* هدر تقویم: ماه و فلش‌ها */}
                 <View style={styles.calendarHeader}>
                     <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                         <Feather name="chevron-right" size={20} color={colors.textPrimary} />
                     </TouchableOpacity>
                     
-                    <Text style={[styles.monthTitle, { color: colors.textPrimary }]}>اردیبهشت ۱۴۰۳</Text>
+                    <Text style={[styles.monthTitle, { color: colors.textPrimary }]}>{currentMonthYear}</Text>
                     
                     <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                         <Feather name="chevron-left" size={20} color={colors.textPrimary} />
                     </TouchableOpacity>
                 </View>
 
-                {/* نوار روزهای هفته */}
+                {/* نوار پویای روزهای هفته */}
                 <View style={[styles.weekStrip, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                    {weekDays.map((item, index) => {
-                        const isSelected = item.date === selectedDate;
+                    {calendarDays.map((item, index) => {
+                        const isSelected = item.timestamp === selectedDate;
                         return (
                             <TouchableOpacity 
                                 key={index} 
-                                onPress={() => setSelectedDate(item.date)}
+                                onPress={() => setSelectedDate(item.timestamp)}
                                 style={[styles.dayItem, isSelected && { backgroundColor: colors.primary }]}
                             >
                                 <Text style={[styles.dayText, { color: isSelected ? '#FFF' : colors.textSecondary }]}>
                                     {item.day}
                                 </Text>
                                 <Text style={[styles.dateText, { color: isSelected ? '#FFF' : colors.textPrimary }]}>
-                                    {item.date}
+                                    {item.dateText}
                                 </Text>
                             </TouchableOpacity>
                         );
                     })}
                 </View>
 
-                {/* عنوان تایم‌لاین */}
-                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>وظایف روز</Text>
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>وظایف این روز</Text>
 
-                {/* تایم‌لاین (خط زمانی) */}
                 <View style={[styles.timelineContainer, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                     {dailyTodos.length === 0 ? (
                         <Text style={{ textAlign: 'center', color: colors.textMuted, padding: 20 }}>وظیفه‌ای برای این روز ثبت نشده است.</Text>
                     ) : (
                         dailyTodos.map((todo, index) => {
                             const isLast = index === dailyTodos.length - 1;
-                            const time = todo.time || mockTimes[index % mockTimes.length]; // استفاده از زمان واقعی یا فرضی
+                            const timeToDisplay = todo.time || '--:--'; 
                             
                             return (
                                 <View key={todo.id} style={styles.timelineRow}>
-                                    
-                                    {/* بخش ساعت */}
                                     <View style={styles.timeColumn}>
-                                        <Text style={[styles.timeText, { color: colors.textSecondary }]}>{time}</Text>
+                                        <Text style={[styles.timeText, { color: colors.textSecondary }]}>{timeToDisplay}</Text>
                                     </View>
 
-                                    {/* بخش خط و نقطه */}
                                     <View style={styles.lineColumn}>
-                                        <View style={[styles.timelineDot, { 
+                                        <TouchableOpacity onPress={() => toggleTodo(todo.id)} style={[styles.timelineDot, { 
                                             borderColor: todo.completed ? colors.success : colors.textMuted,
                                             backgroundColor: todo.completed ? colors.success : colors.bgCard 
                                         }]}>
                                             {todo.completed && <Feather name="check" size={10} color="#FFF" />}
-                                        </View>
+                                        </TouchableOpacity>
                                         {!isLast && <View style={[styles.timelineLine, { backgroundColor: colors.border }]} />}
                                     </View>
 
-                                    {/* بخش کارت وظیفه */}
                                     <View style={styles.taskColumn}>
                                         <TouchableOpacity 
+                                            onPress={() => toggleTodo(todo.id)}
                                             style={[styles.taskCard, { 
                                                 backgroundColor: todo.completed ? colors.bgApp : colors.bgCard,
                                                 borderColor: todo.completed ? colors.success : colors.border 
@@ -120,13 +124,11 @@ export default function CalendarScreen({ dark, setDark }) {
                                             )}
                                         </TouchableOpacity>
                                     </View>
-                                    
                                 </View>
                             );
                         })
                     )}
                 </View>
-
             </ScrollView>
         </View>
     );
@@ -134,28 +136,21 @@ export default function CalendarScreen({ dark, setDark }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    
     calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
     monthTitle: { fontSize: 18, fontWeight: 'bold' },
     iconBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
-    
     weekStrip: { flexDirection: 'row', justifyContent: 'space-between', padding: 15, borderRadius: 20, borderWidth: 1, marginBottom: 25 },
     dayItem: { width: 40, height: 55, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
     dayText: { fontSize: 13, marginBottom: 4 },
     dateText: { fontSize: 16, fontWeight: 'bold' },
-    
     sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 15 },
-    
     timelineContainer: { padding: 15, borderRadius: 20, borderWidth: 1 },
     timelineRow: { flexDirection: 'row', minHeight: 60 },
-    
     timeColumn: { width: 50, alignItems: 'center', paddingTop: 12 },
     timeText: { fontSize: 13, fontWeight: '500' },
-    
     lineColumn: { width: 30, alignItems: 'center' },
     timelineDot: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, justifyContent: 'center', alignItems: 'center', marginTop: 12, zIndex: 2 },
     timelineLine: { position: 'absolute', top: 30, bottom: -12, width: 2, zIndex: 1 },
-    
     taskColumn: { flex: 1, paddingBottom: 15 },
     taskCard: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 12, borderWidth: 1, marginTop: 4 },
     taskTitle: { flex: 1, fontSize: 14, fontWeight: '500', textAlign: 'right' }

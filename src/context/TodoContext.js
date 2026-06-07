@@ -3,7 +3,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const TodoContext = createContext();
 
-// دسته‌بندی‌ها دقیقاً مطابق عکس تغییر کردند
 const DEFAULT_CATEGORIES = [
   { id: "personal", name: "شخصی", color: "#457B9D" },
   { id: "work", name: "کار", color: "#1D3557" },
@@ -38,19 +37,19 @@ export const TodoProvider = ({ children }) => {
         await AsyncStorage.setItem("aura-categories", JSON.stringify(data));
     };
 
-    // --- توابع مربوط به کارها ---
-    // اضافه شدن date و time برای پشتیبانی از صفحه تقویم
+    // تابع جدید برای صفحه تنظیمات: پاک کردن کامل دیتا
+    const clearAllData = async () => {
+        setTodos([]);
+        await AsyncStorage.removeItem("aura-todos");
+    };
+
+    // اضافه کردن وظیفه همراه با تاریخ و زمان واقعی
     const addTodo = (title, description, category, priority, date = null, time = null) => {
         const newTodo = { 
             id: Date.now().toString(), 
-            title, 
-            description, 
-            category, 
-            priority, // 'normal', 'high', 'starred'
-            date, 
-            time, 
-            completed: false, 
-            createdAt: Date.now() 
+            title, description, category, priority, 
+            date, time, // تاریخ و ساعت به دیتابیس متصل شدند
+            completed: false, createdAt: Date.now() 
         };
         saveTodos([newTodo, ...todos]);
     };
@@ -58,7 +57,6 @@ export const TodoProvider = ({ children }) => {
     const toggleTodo = (id) => saveTodos(todos.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
     const deleteTodo = (id) => saveTodos(todos.filter(t => t.id !== id));
 
-    // --- توابع مربوط به دسته‌بندی‌ها ---
     const addCategory = (name, color) => {
         const newCat = { id: Date.now().toString(), name, color };
         saveCategories([...categories, newCat]);
@@ -70,7 +68,7 @@ export const TodoProvider = ({ children }) => {
 
     return (
         <TodoContext.Provider value={{ 
-            todos, categories, addTodo, toggleTodo, deleteTodo, addCategory, deleteCategory 
+            todos, categories, addTodo, toggleTodo, deleteTodo, addCategory, deleteCategory, clearAllData 
         }}>
             {children}
         </TodoContext.Provider>

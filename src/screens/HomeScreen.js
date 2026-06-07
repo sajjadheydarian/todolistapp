@@ -14,23 +14,32 @@ export default function HomeScreen({ navigation, dark, setDark }) {
     const [selectedCategory, setSelectedCategory] = useState('personal');
     const [filter, setFilter] = useState('active');
 
-    // محاسبه آمار دقیقا مطابق طراحی عکس
+    // 🌟 منطق جدید: استخراج تاریخ امروز ساعت ۰۰:۰۰ بامداد
+    const todayTimestamp = useMemo(() => new Date().setHours(0,0,0,0), []);
+
+    // 🌟 فیلتر کردن کل کارها فقط برای «امروز»
+    const todaysTodos = useMemo(() => {
+        return todos.filter(t => t.date === todayTimestamp);
+    }, [todos, todayTimestamp]);
+
+    // محاسبه آمار فقط بر اساس کارهای امروز
     const stats = useMemo(() => {
-        const total = todos.length;
-        const completed = todos.filter(t => t.completed).length;
+        const total = todaysTodos.length;
+        const completed = todaysTodos.filter(t => t.completed).length;
         const active = total - completed;
         const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
         return { total, completed, active, percent };
-    }, [todos]);
+    }, [todaysTodos]);
 
-    const filteredTodos = todos.filter(t => {
-        const matchStatus = filter === 'active' ? !t.completed : (filter === 'completed' ? t.completed : true);
-        return matchStatus;
+    // فیلتر نهایی تب‌ها (در حال انجام / تکمیل شده)
+    const filteredTodos = todaysTodos.filter(t => {
+        return filter === 'active' ? !t.completed : (filter === 'completed' ? t.completed : true);
     });
 
     const handleAdd = () => {
         if (title.trim()) {
-            addTodo(title, '', selectedCategory, priority);
+            // وقتی کاربر از صفحه اصلی کار اضافه می‌کند، پیش‌فرض برای "امروز" ثبت می‌شود
+            addTodo(title, '', selectedCategory, priority, todayTimestamp, null);
             setTitle('');
         }
     };
@@ -47,7 +56,6 @@ export default function HomeScreen({ navigation, dark, setDark }) {
         );
     };
 
-    // دریافت تاریخ امروز به صورت شمسی
     const todayDate = new Intl.DateTimeFormat('fa-IR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
 
     return (
@@ -56,7 +64,6 @@ export default function HomeScreen({ navigation, dark, setDark }) {
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
                 
-                {/* هدر صفحه: مطابق طراحی جدید */}
                 <View style={styles.header}>
                     <View>
                         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>امروز</Text>
@@ -72,11 +79,8 @@ export default function HomeScreen({ navigation, dark, setDark }) {
                     </View>
                 </View>
 
-                {/* کارت خلاصه امروز */}
                 <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>خلاصه امروز</Text>
                 <View style={[styles.summaryCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                    
-                    {/* حلقه پیشرفت (ساده‌سازی شده با استایل) */}
                     <View style={styles.progressCircleContainer}>
                         <View style={[styles.progressCircle, { borderColor: colors.primary }]}>
                             <Text style={[styles.progressPercent, { color: colors.primary }]}>{stats.percent}٪</Text>
@@ -84,7 +88,6 @@ export default function HomeScreen({ navigation, dark, setDark }) {
                         </View>
                     </View>
 
-                    {/* باکس‌های آماری زیر نمودار */}
                     <View style={styles.statsRow}>
                         <View style={[styles.statBox, { backgroundColor: colors.bgApp, borderColor: colors.border }]}>
                             <Text style={[styles.statValue, { color: colors.textPrimary }]}>{stats.total}</Text>
@@ -101,13 +104,11 @@ export default function HomeScreen({ navigation, dark, setDark }) {
                     </View>
                 </View>
 
-                {/* بخش وظایف امروز */}
                 <View style={styles.tasksHeaderRow}>
                     <Text style={[styles.sectionTitle, { color: colors.textPrimary, marginBottom: 0 }]}>وظایف امروز</Text>
                     <Feather name="chevron-left" size={20} color={colors.textSecondary} />
                 </View>
 
-                {/* لیست کارها */}
                 {filteredTodos.length === 0 ? (
                     <Text style={{ textAlign: 'center', color: colors.textMuted, marginTop: 20 }}>وظیفه‌ای برای نمایش وجود ندارد.</Text>
                 ) : (
@@ -142,7 +143,6 @@ export default function HomeScreen({ navigation, dark, setDark }) {
                     ))
                 )}
 
-                {/* فرم افزودن سریع وظیفه در پایین لیست */}
                 <View style={[styles.quickAddContainer, { borderColor: colors.primary }]}>
                     <TouchableOpacity onPress={handleAdd} style={styles.quickAddBtn}>
                         <Feather name="plus" size={20} color={colors.primary} />
@@ -150,7 +150,7 @@ export default function HomeScreen({ navigation, dark, setDark }) {
                     <TextInput
                         value={title}
                         onChangeText={setTitle}
-                        placeholder="افزودن وظیفه..."
+                        placeholder="افزودن سریع وظیفه برای امروز..."
                         placeholderTextColor={colors.textMuted}
                         style={[styles.quickAddInput, { color: colors.textPrimary }]}
                         onSubmitEditing={handleAdd}
@@ -168,28 +168,22 @@ const styles = StyleSheet.create({
     headerTitle: { fontSize: 24, fontWeight: 'bold', marginBottom: 4 },
     headerSubtitle: { fontSize: 13 },
     iconBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 2 } },
-    
     sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 15 },
-    
     summaryCard: { padding: 20, borderRadius: 24, borderWidth: 1, marginBottom: 30, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 4 } },
     progressCircleContainer: { alignItems: 'center', marginBottom: 25 },
     progressCircle: { width: 140, height: 140, borderRadius: 70, borderWidth: 8, justifyContent: 'center', alignItems: 'center' },
     progressPercent: { fontSize: 28, fontWeight: 'bold' },
     progressLabel: { fontSize: 12, marginTop: 4 },
-    
     statsRow: { flexDirection: 'row', justifyContent: 'space-between' },
     statBox: { flex: 0.31, paddingVertical: 15, borderRadius: 16, borderWidth: 1, alignItems: 'center' },
     statValue: { fontSize: 18, fontWeight: 'bold', marginBottom: 5 },
     statLabel: { fontSize: 11 },
-
     tasksHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
-    
     taskItem: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, borderWidth: 1, marginBottom: 10 },
     checkboxWrapper: { marginRight: 12 },
     checkbox: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
     taskTextContainer: { flex: 1 },
     taskTitle: { fontSize: 15, fontWeight: '500', textAlign: 'right' },
-
     quickAddContainer: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, paddingVertical: 5, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', marginTop: 10 },
     quickAddBtn: { padding: 10 },
     quickAddInput: { flex: 1, height: 50, fontSize: 15, textAlign: 'right' }

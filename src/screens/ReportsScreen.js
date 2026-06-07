@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Dimensions } from 'react-native';
 import { TodoContext } from '../context/TodoContext';
 import { lightTheme, darkTheme } from '../theme/AuraTheme';
@@ -12,7 +12,7 @@ export default function ReportsScreen({ dark }) {
     const theme = dark ? darkTheme : lightTheme;
     const { colors } = theme;
 
-    const [timeFrame, setTimeFrame] = useState('weekly'); // هفتگی، ماهانه، کلی
+    const [timeFrame, setTimeFrame] = useState('weekly'); 
 
     // محاسبه آمار کلی
     const totalTasks = todos.length;
@@ -20,19 +20,46 @@ export default function ReportsScreen({ dark }) {
     const activeTasks = totalTasks - completedTasks;
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-    // داده‌های فرضی برای نمودار خطی متناسب با عکس طراحی
-    const chartData = {
-        labels: ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'],
-        datasets: [
-            {
-                data: [20, 45, 28, 80, 59, 43, 65], // میزان درصد پیشرفت فرضی در روزها
-                color: (opacity = 1) => colors.primary, // رنگ اصلی خط نمودار
-                strokeWidth: 3
+    // موتور محاسبه‌گر واقعیِ نمودار (۷ روز گذشته)
+    const chartData = useMemo(() => {
+        const labels = [];
+        const data = [];
+        
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            
+            // استخراج حرف اول روز هفته (مثل: ش، ی، د)
+            const dayName = new Intl.DateTimeFormat('fa-IR', { weekday: 'narrow' }).format(date);
+            labels.push(dayName);
+            
+            // پیدا کردن کارهای ثبت شده در این روز
+            const startOfDay = new Date(date.setHours(0,0,0,0)).getTime();
+            const endOfDay = new Date(date.setHours(23,59,59,999)).getTime();
+            
+            const dayTasks = todos.filter(t => t.createdAt >= startOfDay && t.createdAt <= endOfDay);
+            
+            if (dayTasks.length === 0) {
+                data.push(0); // اگر کاری نبود، درصد پیشرفت صفر
+            } else {
+                const completed = dayTasks.filter(t => t.completed).length;
+                data.push(Math.round((completed / dayTasks.length) * 100));
             }
-        ]
-    };
+        }
 
-    // پیکربندی گرافیکی نمودار خطی
+        // جلوگیری از ایجاد خطای بصری در نمودار (اگر هیچ دیتایی نبود)
+        const isAllZero = data.every(d => d === 0);
+
+        return {
+            labels,
+            datasets: [{
+                data: isAllZero ? [0, 0, 0, 0, 0, 0, 0] : data,
+                color: (opacity = 1) => colors.primary,
+                strokeWidth: 3
+            }]
+        };
+    }, [todos, colors.primary]);
+
     const chartConfig = {
         backgroundGradientFrom: colors.bgCard,
         backgroundGradientTo: colors.bgCard,
@@ -40,11 +67,7 @@ export default function ReportsScreen({ dark }) {
         color: (opacity = 1) => dark ? `rgba(69, 123, 157, ${opacity})` : `rgba(29, 53, 87, ${opacity})`,
         labelColor: (opacity = 1) => colors.textSecondary,
         style: { borderRadius: 16 },
-        propsForDots: {
-            r: '5',
-            strokeWidth: '2',
-            stroke: colors.primary
-        }
+        propsForDots: { r: '5', strokeWidth: '2', stroke: colors.primary }
     };
 
     return (
@@ -52,27 +75,19 @@ export default function ReportsScreen({ dark }) {
             <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} backgroundColor={colors.bgApp} />
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-                
-                {/* هدر صفحه گزارش‌ها و فیلتر بازه زمانی */}
                 <View style={styles.headerRow}>
                     <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>گزارش‌ها</Text>
-                    
                     <View style={[styles.dropdown, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                        <Text style={[styles.dropdownText, { color: colors.textPrimary }]}>
-                            {timeFrame === 'weekly' ? 'هفتگی' : timeFrame === 'monthly' ? 'ماهانه' : 'کلی'}
-                        </Text>
+                        <Text style={[styles.dropdownText, { color: colors.textPrimary }]}>هفتگی</Text>
                         <Feather name="chevron-down" size={16} color={colors.textSecondary} style={{ marginRight: 6 }} />
                     </View>
                 </View>
 
-                {/* کارت درصد پیشرفت کلی */}
                 <View style={[styles.progressCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                     <View style={[styles.bigCircle, { borderColor: colors.primary }]}>
                         <Text style={[styles.circlePercent, { color: colors.textPrimary }]}>{completionRate}٪</Text>
                         <Text style={[styles.circleLabel, { color: colors.textSecondary }]}>پیشرفت کلی</Text>
                     </View>
-
-                    {/* اطلاعات تکمیلی زیر دایره */}
                     <View style={styles.miniStatsRow}>
                         <View style={styles.miniStatBox}>
                             <Text style={[styles.miniStatValue, { color: colors.textPrimary }]}>{totalTasks}</Text>
@@ -89,20 +104,18 @@ export default function ReportsScreen({ dark }) {
                     </View>
                 </View>
 
-                {/* بخش نمودار پیشرفت */}
                 <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>نمودار پیشرفت</Text>
                 <View style={[styles.chartWrapper, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                     <LineChart
                         data={chartData}
-                        width={screenWidth - 70} // تنظیم دقیق اندازه عرض نمودار نسبت به کارت
+                        width={screenWidth - 70}
                         height={180}
                         chartConfig={chartConfig}
-                        bezier // منحنی کردن خطوط نمودار دقیقا مثل عکس طراحی
+                        bezier
                         style={{ marginVertical: 8, borderRadius: 16 }}
-                        withVerticalLines={false} // حذف خطوط عمودی برای خلوت شدن و زیبایی نمودار
+                        withVerticalLines={false}
                     />
                 </View>
-
             </ScrollView>
         </View>
     );
@@ -112,20 +125,16 @@ const styles = StyleSheet.create({
     container: { flex: 1 },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
     pageTitle: { fontSize: 22, fontWeight: 'bold' },
-    
     dropdown: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, borderWidth: 1 },
     dropdownText: { fontSize: 13, fontWeight: '500' },
-    
-    progressCard: { padding: 25, borderRadius: 24, borderWidth: 1, alignItems: 'center', marginBottom: 25, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 4 } },
+    progressCard: { padding: 25, borderRadius: 24, borderWidth: 1, alignItems: 'center', marginBottom: 25, elevation: 2 },
     bigCircle: { width: 150, height: 150, borderRadius: 75, borderWidth: 10, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
     circlePercent: { fontSize: 32, fontWeight: 'bold' },
     circleLabel: { fontSize: 12, marginTop: 4 },
-    
     miniStatsRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 15 },
     miniStatBox: { flex: 1, alignItems: 'center' },
     miniStatValue: { fontSize: 18, fontWeight: 'bold', marginBottom: 2 },
     miniStatLabel: { fontSize: 11 },
-    
     sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 15 },
     chartWrapper: { padding: 10, borderRadius: 24, borderWidth: 1, alignItems: 'center' }
 });
