@@ -98,7 +98,7 @@ export default function HomeScreen({ navigation, dark, setDark }) {
                 <View style={styles.header}>
                     <View style={styles.logoRow}>
                         <View style={[styles.logoIcon, { backgroundColor: colors.primary }]}>
-                            <Text style={styles.logoText}>لیست کارم</Text>
+                            <Text style={styles.logoText}>کارم</Text>
                         </View>
                         <Text style={[styles.appName, { color: colors.textPrimary }]}>مدیریت کارهای روزمره</Text>
                     </View>
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
     logoRow: { flexDirection: 'row', alignItems: 'center' },
     logoIcon: { width: 40, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center', elevation: 4 },
-    logoText: { color: 'white', fontSize: 22, fontWeight: 'bold' },
+    logoText: { color: 'white', fontSize: 15, fontWeight: 'bold' },
     appName: { fontSize: 20, fontWeight: 'bold', marginLeft: 10 },
     themeBtn: { width: 45, height: 45, borderRadius: 25, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
 
