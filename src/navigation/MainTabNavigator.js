@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Feather from 'react-native-vector-icons/Feather';
 import { TAPSELL_ZONE_ID } from '@env';
 import { TapsellPlus, TapsellPlusBannerType, TapsellPlusHorizontalGravity, TapsellPlusVerticalGravity } from 'react-native-tapsell-plus';
+import moment from 'moment-jalaali';
 
 import HomeScreen from '../screens/HomeScreen';
 import CalendarScreen from '../screens/CalendarScreen';
@@ -12,10 +13,9 @@ import SettingsScreen from '../screens/SettingsScreen';
 import { lightTheme, darkTheme } from '../theme/AuraTheme';
 import { TodoContext } from '../context/TodoContext';
 
-const EmptyScreen = () => null;
-
 const Tab = createBottomTabNavigator();
 const screenHeight = Dimensions.get('window').height;
+const EmptyScreen = () => null;
 
 const CustomTabBarButton = ({ children, onPress, colors }) => (
     <TouchableOpacity style={styles.customBtnWrapper} onPress={onPress} activeOpacity={0.8}>
@@ -28,28 +28,34 @@ const CustomTabBarButton = ({ children, onPress, colors }) => (
 export default function MainTabNavigator({ dark, setDark }) {
     const theme = dark ? darkTheme : lightTheme;
     const { colors } = theme;
-
+    
     const { addTodo, categories } = useContext(TodoContext);
     const [isModalVisible, setModalVisible] = useState(false);
-
-    // استیت‌های فرم ایجاد وظیفه جدید
+    
     const [newTaskTitle, setNewTaskTitle] = useState('');
     const [newTaskPriority, setNewTaskPriority] = useState('medium');
     const [newTaskCat, setNewTaskCat] = useState('personal');
-    const [selectedDate, setSelectedDate] = useState(new Date().setHours(0, 0, 0, 0));
+    const [selectedDate, setSelectedDate] = useState(new Date().setHours(0,0,0,0));
     const [selectedTime, setSelectedTime] = useState('بدون زمان');
+    
+    // استیت برای نمایش تقویم جدولی بازشونده در فرم
+    const [showGridCalendar, setShowGridCalendar] = useState(false);
 
-    // تولید 7 روز آینده برای انتخاب تقویم
-    const upcomingDays = useMemo(() => {
-        const days = [];
-        for (let i = 0; i < 7; i++) {
-            const d = new Date();
-            d.setDate(d.getDate() + i);
-            const ts = d.setHours(0, 0, 0, 0);
-            const dayName = i === 0 ? 'امروز' : (i === 1 ? 'فردا' : new Intl.DateTimeFormat('fa-IR', { weekday: 'long' }).format(d));
-            days.push({ label: dayName, value: ts });
+    // تولید خودکار روزهای ماه جاری شمسی برای جدول
+    const daysInCurrentJMonth = useMemo(() => {
+        const startOfMonth = moment().startOf('jMonth');
+        const totalDays = moment.jDaysInMonth(moment().jYear(), moment().jMonth());
+        const daysArray = [];
+        
+        for (let i = 0; i < totalDays; i++) {
+            const dayMoment = startOfMonth.clone().add(i, 'days');
+            daysArray.push({
+                dayNum: dayMoment.format('jD'),
+                dayName: dayMoment.format('dddd').charAt(0),
+                timestamp: dayMoment.toDate().setHours(0,0,0,0)
+            });
         }
-        return days;
+        return daysArray;
     }, []);
 
     const timeOptions = ['بدون زمان', '۰۸:۰۰', '۱۰:۰۰', '۱۲:۰۰', '۱۵:۰۰', '۱۸:۰۰', '۲۰:۰۰', '۲۲:۰۰'];
@@ -61,19 +67,19 @@ export default function MainTabNavigator({ dark, setDark }) {
                 currentBannerId = responseId;
                 TapsellPlus.showStandardBannerAd(
                     responseId, TapsellPlusHorizontalGravity.BOTTOM, TapsellPlusVerticalGravity.CENTER,
-                    () => console.log("Banner Global"), (error) => console.log("Banner error:", error)
+                    () => console.log("Banner Global Working"), (error) => console.log("Tapsell Banner error:", error)
                 );
-            }).catch(e => console.log("Request error:", e));
+            }).catch(e => console.log("Tapsell Initialization/Request error:", e));
         return () => { if (currentBannerId) TapsellPlus.destroyStandardBannerAd(currentBannerId); };
     }, []);
 
     const handleSaveTask = () => {
         if (newTaskTitle.trim()) {
-            // ذخیره همراه با تاریخ و زمان
             addTodo(newTaskTitle, '', newTaskCat, newTaskPriority, selectedDate, selectedTime === 'بدون زمان' ? null : selectedTime);
             setModalVisible(false);
             setNewTaskTitle('');
             setSelectedTime('بدون زمان');
+            setShowGridCalendar(false);
         }
     };
 
@@ -96,14 +102,9 @@ export default function MainTabNavigator({ dark, setDark }) {
                 <Tab.Screen name="CalendarTab" options={{ tabBarIcon: ({ focused }) => <Feather name="calendar" size={24} color={focused ? colors.primary : colors.textMuted} /> }}>
                     {props => <CalendarScreen {...props} dark={dark} setDark={setDark} />}
                 </Tab.Screen>
-                <Tab.Screen
-                    name="AddTab"
-                    component={EmptyScreen} // این خط تغییر کرد
+                <Tab.Screen name="AddTab" component={EmptyScreen}
                     listeners={{ tabPress: (e) => { e.preventDefault(); setModalVisible(true); } }}
-                    options={{
-                        tabBarIcon: () => <Feather name="plus" size={32} color="#FFF" />,
-                        tabBarButton: (props) => <CustomTabBarButton {...props} colors={colors} />
-                    }}
+                    options={{ tabBarIcon: () => <Feather name="plus" size={32} color="#FFF" />, tabBarButton: (props) => <CustomTabBarButton {...props} colors={colors} /> }}
                 />
                 <Tab.Screen name="ReportsTab" options={{ tabBarIcon: ({ focused }) => <Feather name="bar-chart-2" size={24} color={focused ? colors.primary : colors.textMuted} /> }}>
                     {props => <ReportsScreen {...props} dark={dark} />}
@@ -117,9 +118,7 @@ export default function MainTabNavigator({ dark, setDark }) {
                 <View style={styles.modalOverlay}>
                     <View style={[styles.modalContent, { backgroundColor: colors.bgCard, maxHeight: screenHeight * 0.85 }]}>
                         <View style={styles.modalHeader}>
-                            <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <Feather name="x" size={24} color={colors.textPrimary} />
-                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setModalVisible(false)}><Feather name="x" size={24} color={colors.textPrimary} /></TouchableOpacity>
                             <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>افزودن کار جدید</Text>
                             <View style={{ width: 24 }} />
                         </View>
@@ -131,18 +130,40 @@ export default function MainTabNavigator({ dark, setDark }) {
                                 style={[styles.modalInput, { backgroundColor: colors.bgApp, color: colors.textPrimary, borderColor: colors.border }]}
                             />
 
-                            {/* انتخاب روز */}
-                            <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>تاریخ انجام:</Text>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
-                                {upcomingDays.map((d, i) => (
-                                    <TouchableOpacity key={i} onPress={() => setSelectedDate(d.value)} style={[styles.chip, { backgroundColor: selectedDate === d.value ? colors.primary : colors.bgApp, borderColor: selectedDate === d.value ? colors.primary : colors.border }]}>
-                                        <Text style={{ color: selectedDate === d.value ? '#fff' : colors.textSecondary, fontSize: 13 }}>{d.label}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
+                            {/* فیلد انتخاب تاریخ پیشرفته شبیه به تقویم‌های رسمی */}
+                            <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>تاریخ انجام وظیفه:</Text>
+                            <TouchableOpacity 
+                                onPress={() => setShowGridCalendar(!showGridCalendar)}
+                                style={[styles.dateSelectorTrigger, { backgroundColor: colors.bgApp, borderColor: colors.border }]}
+                            >
+                                <Feather name="calendar" size={18} color={colors.primary} />
+                                <Text style={{ color: colors.textPrimary, fontWeight: 'bold' }}>
+                                    {moment(selectedDate).format('jDD jMMMM jYYYY')} ({showGridCalendar ? 'بستن تقویم' : 'تغییر تاریخ'})
+                                </Text>
+                            </TouchableOpacity>
 
-                            {/* انتخاب زمان */}
-                            <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>ساعت (اختیاری):</Text>
+                            {/* شبکه نمایش کل روزهای ماه جاری شمسی */}
+                            {showGridCalendar && (
+                                <View style={[styles.gridCalendarContainer, { borderColor: colors.border }]}>
+                                    <Text style={{ textAlign: 'center', fontSize: 13, color: colors.textMuted, marginBottom: 10 }}>{moment().format('jMMMM jYYYY')}</Text>
+                                    <View style={styles.gridDaysWrapper}>
+                                        {daysInCurrentJMonth.map((d, idx) => {
+                                            const isSelected = selectedDate === d.timestamp;
+                                            return (
+                                                <TouchableOpacity 
+                                                    key={idx} onPress={() => { setSelectedDate(d.timestamp); setShowGridCalendar(false); }}
+                                                    style={[styles.gridDayItem, isSelected && { backgroundColor: colors.primary }]}
+                                                >
+                                                    <Text style={[styles.gridDayText, { color: isSelected ? '#FFF' : colors.textPrimary, fontWeight: isSelected ? 'bold' : 'normal' }]}>{d.dayNum}</Text>
+                                                    <Text style={{ color: isSelected ? '#FFF' : colors.textMuted, fontSize: 9 }}>{d.dayName}</Text>
+                                                </TouchableOpacity>
+                                            );
+                                        })}
+                                    </View>
+                                </View>
+                            )}
+
+                            <Text style={[styles.modalLabel, { color: colors.textSecondary, marginTop: 15 }]}>ساعت (اختیاری):</Text>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
                                 {timeOptions.map((t, i) => (
                                     <TouchableOpacity key={i} onPress={() => setSelectedTime(t)} style={[styles.chip, { backgroundColor: selectedTime === t ? colors.accent : colors.bgApp, borderColor: selectedTime === t ? colors.accent : colors.border }]}>
@@ -190,6 +211,11 @@ const styles = StyleSheet.create({
     modalTitle: { fontSize: 18, fontWeight: 'bold' },
     modalInput: { height: 55, borderWidth: 1, borderRadius: 12, paddingHorizontal: 15, fontSize: 16, textAlign: 'right', marginBottom: 20 },
     modalLabel: { fontSize: 14, fontWeight: 'bold', marginBottom: 10 },
+    dateSelectorTrigger: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderRadius: 12, borderWidth: 1, marginBottom: 10 },
+    gridCalendarContainer: { borderWidth: 1, padding: 12, borderRadius: 16, marginBottom: 15 },
+    gridDaysWrapper: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 6, justifyContent: 'flex-start' },
+    gridDayItem: { width: '12.5%', paddingVertical: 8, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+    gridDayText: { fontSize: 14 },
     chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 15, borderWidth: 1, marginLeft: 8 },
     priBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1, alignItems: 'center' },
     saveBtn: { height: 55, borderRadius: 15, justifyContent: 'center', alignItems: 'center', elevation: 2, marginBottom: 20 },

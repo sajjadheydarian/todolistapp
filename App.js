@@ -6,10 +6,11 @@ import { TAPSELL_APP_KEY } from '@env';
 import { TapsellPlus } from 'react-native-tapsell-plus';
 
 import MainTabNavigator from './src/navigation/MainTabNavigator';
+import AllTasksScreen from './src/screens/AllTasksScreen';
+import OverdueTasksScreen from './src/screens/OverdueTasksScreen';
 import { TodoProvider } from './src/context/TodoContext';
 import { lightTheme, darkTheme } from './src/theme/AuraTheme';
 
-// روشن کردن موتور تپسل در فضای سراسری
 TapsellPlus.initialize(TAPSELL_APP_KEY);
 TapsellPlus.setGDPRConsent(true);
 
@@ -43,9 +44,19 @@ export default function App() {
     <TodoProvider>
       <NavigationContainer theme={navTheme}>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {/* مسیر اصلی حالا به نوار ناوبری هدایت می‌شود */}
+          {/* نوار ناوبری اصلی */}
           <Stack.Screen name="MainTabs">
             {props => <MainTabNavigator {...props} dark={isDark} setDark={setIsDark} />}
+          </Stack.Screen>
+
+          {/* صفحه نمایش همه وظایف */}
+          <Stack.Screen name="AllTasks">
+            {props => <AllTasksScreen {...props} dark={isDark} />}
+          </Stack.Screen>
+
+          {/* صفحه کارهای عقب‌افتاده و انجام‌نشده */}
+          <Stack.Screen name="OverdueTasks">
+            {props => <OverdueTasksScreen {...props} dark={isDark} />}
           </Stack.Screen>
         </Stack.Navigator>
       </NavigationContainer>
