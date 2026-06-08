@@ -1,6 +1,7 @@
+
 workflows:
-  android-apk-build:
-    name: Build Android APK (Universal)
+  android-aab-build:
+    name: Build Android App Bundle (AAB)
     max_build_duration: 120
     instance_type: mac_mini_m2
     environment:
@@ -13,11 +14,11 @@ workflows:
       - name: Install npm dependencies
         script: | 
           npm install --legacy-peer-deps
-      - name: Build Android APK
+      - name: Build Android App Bundle
         script: | 
           sed -i '' 's/\${usesCleartextTraffic}/true/g' android/app/src/main/AndroidManifest.xml || true
           cd android
           chmod +x ./gradlew
-          ./gradlew assembleRelease
+          ./gradlew bundleRelease
     artifacts:
-      - android/app/build/outputs/**/*.apk
+      - android/app/build/outputs/**/*.aab
