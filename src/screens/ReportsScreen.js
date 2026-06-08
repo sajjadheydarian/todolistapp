@@ -27,25 +27,26 @@ export default function ReportsScreen({ dark }) {
     const activeTasks = totalTasks - completedTasks;
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
+    // منطق اصلاح شده نمودار: محاسبه بر اساس تاریخ تنظیم شده (date) نه زمان ساخت
     const chartData = useMemo(() => {
         const labels = [];
         const data = [];
         
         for (let i = timeFrame.days - 1; i >= 0; i--) {
-            const date = new Date();
-            date.setDate(date.getDate() - i);
+            const d = new Date();
+            d.setDate(d.getDate() - i);
             
-            // برای بازه 30 روزه، فقط بعضی لیبل‌ها را نشان می‌دهیم تا نمودار شلوغ نشود
             if (timeFrame.days <= 7 || i % Math.ceil(timeFrame.days / 7) === 0) {
-                labels.push(new Intl.DateTimeFormat('fa-IR', { weekday: 'narrow' }).format(date));
+                labels.push(new Intl.DateTimeFormat('fa-IR', { weekday: 'narrow' }).format(d));
             } else {
                 labels.push('');
             }
             
-            const startOfDay = new Date(date.setHours(0,0,0,0)).getTime();
-            const endOfDay = new Date(date.setHours(23,59,59,999)).getTime();
+            // تولید تایم‌استمپ بامداد آن روز برای مقایسه دقیق با تاریخ وظایف
+            const targetTimestamp = new Date(d.setHours(0,0,0,0)).getTime();
             
-            const dayTasks = todos.filter(t => t.createdAt >= startOfDay && t.createdAt <= endOfDay);
+            // پیدا کردن کارهای اختصاص یافته به این روز
+            const dayTasks = todos.filter(t => t.date === targetTimestamp);
             
             if (dayTasks.length === 0) {
                 data.push(0);
@@ -55,7 +56,7 @@ export default function ReportsScreen({ dark }) {
             }
         }
 
-        const isAllZero = data.every(d => d === 0);
+        const isAllZero = data.every(val => val === 0);
         return {
             labels,
             datasets: [{
@@ -83,7 +84,6 @@ export default function ReportsScreen({ dark }) {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
                 <View style={styles.headerRow}>
                     <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>گزارش‌ها</Text>
-                    
                     <TouchableOpacity onPress={() => setIsDropdownOpen(true)} style={[styles.dropdown, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                         <Text style={[styles.dropdownText, { color: colors.textPrimary }]}>{timeFrame.label}</Text>
                         <Feather name="chevron-down" size={16} color={colors.textSecondary} style={{ marginRight: 6 }} />
@@ -96,44 +96,24 @@ export default function ReportsScreen({ dark }) {
                         <Text style={[styles.circleLabel, { color: colors.textSecondary }]}>پیشرفت کلی</Text>
                     </View>
                     <View style={styles.miniStatsRow}>
-                        <View style={styles.miniStatBox}>
-                            <Text style={[styles.miniStatValue, { color: colors.textPrimary }]}>{totalTasks}</Text>
-                            <Text style={[styles.miniStatLabel, { color: colors.textMuted }]}>کل وظایف</Text>
-                        </View>
-                        <View style={styles.miniStatBox}>
-                            <Text style={[styles.miniStatValue, { color: colors.success }]}>{completedTasks}</Text>
-                            <Text style={[styles.miniStatLabel, { color: colors.textMuted }]}>انجام شده</Text>
-                        </View>
-                        <View style={styles.miniStatBox}>
-                            <Text style={[styles.miniStatValue, { color: colors.textPrimary }]}>{activeTasks}</Text>
-                            <Text style={[styles.miniStatLabel, { color: colors.textMuted }]}>باقی‌مانده</Text>
-                        </View>
+                        <View style={styles.miniStatBox}><Text style={[styles.miniStatValue, { color: colors.textPrimary }]}>{totalTasks}</Text><Text style={[styles.miniStatLabel, { color: colors.textMuted }]}>کل وظایف</Text></View>
+                        <View style={styles.miniStatBox}><Text style={[styles.miniStatValue, { color: colors.success }]}>{completedTasks}</Text><Text style={[styles.miniStatLabel, { color: colors.textMuted }]}>انجام شده</Text></View>
+                        <View style={styles.miniStatBox}><Text style={[styles.miniStatValue, { color: colors.textPrimary }]}>{activeTasks}</Text><Text style={[styles.miniStatLabel, { color: colors.textMuted }]}>باقی‌مانده</Text></View>
                     </View>
                 </View>
 
                 <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>نمودار پیشرفت</Text>
                 <View style={[styles.chartWrapper, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                    <LineChart
-                        data={chartData} width={screenWidth - 70} height={180}
-                        chartConfig={chartConfig} bezier style={{ marginVertical: 8, borderRadius: 16 }}
-                        withVerticalLines={false}
-                    />
+                    <LineChart data={chartData} width={screenWidth - 70} height={180} chartConfig={chartConfig} bezier style={{ marginVertical: 8, borderRadius: 16 }} withVerticalLines={false} />
                 </View>
             </ScrollView>
 
-            {/* مودال انتخاب بازه زمانی */}
             <Modal visible={isDropdownOpen} transparent={true} animationType="fade">
                 <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsDropdownOpen(false)}>
                     <View style={[styles.dropdownMenu, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                         {timeOptions.map((opt, idx) => (
-                            <TouchableOpacity 
-                                key={idx} 
-                                style={[styles.dropdownItem, idx < timeOptions.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
-                                onPress={() => { setTimeFrame(opt); setIsDropdownOpen(false); }}
-                            >
-                                <Text style={{ color: timeFrame.days === opt.days ? colors.primary : colors.textPrimary, fontWeight: timeFrame.days === opt.days ? 'bold' : 'normal' }}>
-                                    {opt.label}
-                                </Text>
+                            <TouchableOpacity key={idx} style={[styles.dropdownItem, idx < timeOptions.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]} onPress={() => { setTimeFrame(opt); setIsDropdownOpen(false); }}>
+                                <Text style={{ color: timeFrame.days === opt.days ? colors.primary : colors.textPrimary, fontWeight: timeFrame.days === opt.days ? 'bold' : 'normal' }}>{opt.label}</Text>
                             </TouchableOpacity>
                         ))}
                     </View>

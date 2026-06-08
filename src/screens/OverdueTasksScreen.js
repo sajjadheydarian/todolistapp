@@ -1,5 +1,5 @@
 import React, { useContext, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Alert } from 'react-native';
 import { TodoContext } from '../context/TodoContext';
 import { lightTheme, darkTheme } from '../theme/AuraTheme';
 import Feather from 'react-native-vector-icons/Feather';
@@ -12,10 +12,16 @@ export default function OverdueTasksScreen({ navigation, dark }) {
 
     const todayTimestamp = useMemo(() => new Date().setHours(0,0,0,0), []);
 
-    // فیلتر کارهای انجام نشده‌ای که تاریخشان گذشته است
     const overdueTodos = useMemo(() => {
         return todos.filter(t => !t.completed && t.date < todayTimestamp);
     }, [todos, todayTimestamp]);
+
+    const confirmDelete = (id) => {
+        Alert.alert("حذف کار", "آیا مطمئن هستید که می‌خواهید این وظیفه را حذف کنید؟", [
+            { text: "خیر", style: "cancel" },
+            { text: "بله", onPress: () => deleteTodo(id), style: "destructive" }
+        ]);
+    };
 
     return (
         <View style={[styles.container, { backgroundColor: colors.bgApp }]}>
@@ -33,11 +39,10 @@ export default function OverdueTasksScreen({ navigation, dark }) {
                 {overdueTodos.length === 0 ? (
                     <View style={{ alignItems: 'center', marginTop: 60 }}>
                         <Feather name="award" size={50} color={colors.success} style={{ marginBottom: 15 }} />
-                        <Text style={{ textAlign: 'center', color: colors.textSecondary, fontWeight: 'bold' }}>عالیه سجاد جان! هیچ کار عقب‌افتاده‌ای نداری.</Text>
+                        <Text style={{ textAlign: 'center', color: colors.textSecondary, fontWeight: 'bold' }}>عالیه! هیچ کار عقب‌افتاده‌ای نداری.</Text>
                     </View>
                 ) : (
                     overdueTodos.map(todo => {
-                        // محاسبه تعداد روزهای تاخیر
                         const diffDays = Math.ceil((todayTimestamp - todo.date) / (1000 * 60 * 60 * 24));
                         return (
                             <View key={todo.id} style={[styles.taskCard, { backgroundColor: colors.bgCard, borderColor: colors.danger + '30' }]}>
@@ -52,7 +57,7 @@ export default function OverdueTasksScreen({ navigation, dark }) {
                                         {diffDays === 1 ? 'مهلت: دیروز بود' : `${diffDays} روز تاخیر`} (تاریخ: {moment(todo.date).format('jD jMMMM')})
                                     </Text>
                                 </View>
-                                <TouchableOpacity onPress={() => deleteTodo(todo.id)} style={{ padding: 5 }}><Feather name="trash-2" size={16} color={colors.danger} /></TouchableOpacity>
+                                <TouchableOpacity onPress={() => confirmDelete(todo.id)} style={{ padding: 5 }}><Feather name="trash-2" size={16} color={colors.danger} /></TouchableOpacity>
                             </View>
                         );
                     })

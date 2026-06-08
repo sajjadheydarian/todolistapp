@@ -1,5 +1,5 @@
 import React, { useContext, useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar, TextInput, Alert } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
 import { TodoContext } from '../context/TodoContext';
 import { lightTheme, darkTheme } from '../theme/AuraTheme';
@@ -8,21 +8,18 @@ import moment from 'moment-jalaali';
 moment.loadPersian({ usePersianDigits: true, dialect: 'persian-modern' });
 
 export default function CalendarScreen({ dark }) {
-    const { todos, toggleTodo, addTodo } = useContext(TodoContext);
+    const { todos, toggleTodo, addTodo, deleteTodo } = useContext(TodoContext);
     const theme = dark ? darkTheme : lightTheme;
     const { colors } = theme;
 
     const [selectedDate, setSelectedDate] = useState(new Date().setHours(0,0,0,0));
-    const [weekOffset, setWeekOffset] = useState(0); // کنترل هفته‌ها
+    const [weekOffset, setWeekOffset] = useState(0); 
     const [quickTitle, setQuickTitle] = useState('');
 
-    // تولید تقویم برای هفته‌ای که در آن هستیم (شنبه تا جمعه)
     const calendarDays = useMemo(() => {
         const days = [];
         const today = moment();
-        const currentDayIndex = today.day() === 6 ? 0 : today.day() + 1; // 0 برای شنبه
-        
-        // پیدا کردن شنبه‌ی هفته مورد نظر
+        const currentDayIndex = today.day() === 6 ? 0 : today.day() + 1; 
         const startOfWeek = moment().add(weekOffset * 7, 'days').subtract(currentDayIndex, 'days');
 
         for(let i = 0; i < 7; i++) {
@@ -36,7 +33,7 @@ export default function CalendarScreen({ dark }) {
         return days;
     }, [weekOffset]);
 
-    const currentMonthYear = moment(calendarDays[3].timestamp).format('jMMMM jYYYY'); // نام ماه بر اساس وسط هفته
+    const currentMonthYear = moment(calendarDays[3].timestamp).format('jMMMM jYYYY');
 
     const dailyTodos = todos.filter(t => new Date(t.date).setHours(0,0,0,0) === new Date(selectedDate).setHours(0,0,0,0))
         .sort((a, b) => (!a.time ? 1 : !b.time ? -1 : a.time.localeCompare(b.time)));
@@ -53,6 +50,14 @@ export default function CalendarScreen({ dark }) {
         }
     };
 
+    // تابع هشدار حذف
+    const confirmDelete = (id) => {
+        Alert.alert("حذف کار", "آیا مطمئن هستید که می‌خواهید این وظیفه را حذف کنید؟", [
+            { text: "خیر", style: "cancel" },
+            { text: "بله", onPress: () => deleteTodo(id), style: "destructive" }
+        ]);
+    };
+
     return (
         <View style={[styles.container, { backgroundColor: colors.bgApp }]}>
             <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} backgroundColor={colors.bgApp} />
@@ -60,34 +65,21 @@ export default function CalendarScreen({ dark }) {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
                 
                 <View style={styles.calendarHeader}>
-                    {/* راست در شمسی یعنی گذشته (عقب) */}
-                    <TouchableOpacity onPress={() => setWeekOffset(prev => prev - 1)} style={[styles.iconBtn, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                        <Feather name="chevron-right" size={20} color={colors.textPrimary} />
-                    </TouchableOpacity>
-                    
+                    <TouchableOpacity onPress={() => setWeekOffset(prev => prev - 1)} style={[styles.iconBtn, { backgroundColor: colors.bgCard, borderColor: colors.border }]}><Feather name="chevron-right" size={20} color={colors.textPrimary} /></TouchableOpacity>
                     <View style={{ alignItems: 'center' }}>
                         <Text style={[styles.monthTitle, { color: colors.textPrimary }]}>{currentMonthYear}</Text>
                         {weekOffset !== 0 && (
-                            <TouchableOpacity onPress={handleBackToToday}>
-                                <Text style={{ color: colors.primary, fontSize: 12, marginTop: 4 }}>بازگشت به امروز</Text>
-                            </TouchableOpacity>
+                            <TouchableOpacity onPress={handleBackToToday}><Text style={{ color: colors.primary, fontSize: 12, marginTop: 4 }}>بازگشت به امروز</Text></TouchableOpacity>
                         )}
                     </View>
-                    
-                    {/* چپ در شمسی یعنی آینده (جلو) */}
-                    <TouchableOpacity onPress={() => setWeekOffset(prev => prev + 1)} style={[styles.iconBtn, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                        <Feather name="chevron-left" size={20} color={colors.textPrimary} />
-                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setWeekOffset(prev => prev + 1)} style={[styles.iconBtn, { backgroundColor: colors.bgCard, borderColor: colors.border }]}><Feather name="chevron-left" size={20} color={colors.textPrimary} /></TouchableOpacity>
                 </View>
 
                 <View style={[styles.weekStrip, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                     {calendarDays.map((item, index) => {
                         const isSelected = item.timestamp === selectedDate;
                         return (
-                            <TouchableOpacity 
-                                key={index} onPress={() => setSelectedDate(item.timestamp)}
-                                style={[styles.dayItem, isSelected && { backgroundColor: colors.primary }]}
-                            >
+                            <TouchableOpacity key={index} onPress={() => setSelectedDate(item.timestamp)} style={[styles.dayItem, isSelected && { backgroundColor: colors.primary }]}>
                                 <Text style={[styles.dayText, { color: isSelected ? '#FFF' : colors.textSecondary }]}>{item.day}</Text>
                                 <Text style={[styles.dateText, { color: isSelected ? '#FFF' : colors.textPrimary }]}>{item.dateText}</Text>
                             </TouchableOpacity>
@@ -114,10 +106,15 @@ export default function CalendarScreen({ dark }) {
                                         {!isLast && <View style={[styles.timelineLine, { backgroundColor: colors.border }]} />}
                                     </View>
                                     <View style={styles.taskColumn}>
-                                        <TouchableOpacity onPress={() => toggleTodo(todo.id)} style={[styles.taskCard, { backgroundColor: todo.completed ? colors.bgApp : colors.bgCard, borderColor: todo.completed ? colors.success : colors.border }]}>
-                                            <Text style={[styles.taskTitle, { color: todo.completed ? colors.textMuted : colors.textPrimary, textDecorationLine: todo.completed ? 'line-through' : 'none' }]}>{todo.title}</Text>
-                                            {todo.priority === 'high' && <Feather name="star" size={14} color={colors.accent} style={{ marginLeft: 8 }} />}
-                                        </TouchableOpacity>
+                                        <View style={[styles.taskCard, { backgroundColor: todo.completed ? colors.bgApp : colors.bgCard, borderColor: todo.completed ? colors.success : colors.border }]}>
+                                            <TouchableOpacity onPress={() => toggleTodo(todo.id)} style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                                                <Text style={[styles.taskTitle, { color: todo.completed ? colors.textMuted : colors.textPrimary, textDecorationLine: todo.completed ? 'line-through' : 'none' }]}>{todo.title}</Text>
+                                                {todo.priority === 'high' && <Feather name="star" size={14} color={colors.accent} style={{ marginLeft: 8 }} />}
+                                            </TouchableOpacity>
+                                            <TouchableOpacity onPress={() => confirmDelete(todo.id)} style={{ padding: 5, marginLeft: 10 }}>
+                                                <Feather name="trash-2" size={16} color={colors.danger} />
+                                            </TouchableOpacity>
+                                        </View>
                                     </View>
                                 </View>
                             );
@@ -125,17 +122,9 @@ export default function CalendarScreen({ dark }) {
                     )}
                 </View>
 
-                {/* فرم افزودن سریع برای روز انتخاب شده در تقویم */}
                 <View style={[styles.quickAddContainer, { borderColor: colors.primary }]}>
-                    <TouchableOpacity onPress={handleQuickAdd} style={styles.quickAddBtn}>
-                        <Feather name="plus" size={20} color={colors.primary} />
-                    </TouchableOpacity>
-                    <TextInput
-                        value={quickTitle} onChangeText={setQuickTitle}
-                        placeholder="ثبت وظیفه در این روز..." placeholderTextColor={colors.textMuted}
-                        style={[styles.quickAddInput, { color: colors.textPrimary }]}
-                        onSubmitEditing={handleQuickAdd}
-                    />
+                    <TouchableOpacity onPress={handleQuickAdd} style={styles.quickAddBtn}><Feather name="plus" size={20} color={colors.primary} /></TouchableOpacity>
+                    <TextInput value={quickTitle} onChangeText={setQuickTitle} placeholder="ثبت وظیفه در این روز..." placeholderTextColor={colors.textMuted} style={[styles.quickAddInput, { color: colors.textPrimary }]} onSubmitEditing={handleQuickAdd} />
                 </View>
 
             </ScrollView>

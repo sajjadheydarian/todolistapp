@@ -38,13 +38,20 @@ export default function MainTabNavigator({ dark, setDark }) {
     const [selectedDate, setSelectedDate] = useState(new Date().setHours(0,0,0,0));
     const [selectedTime, setSelectedTime] = useState('بدون زمان');
     
-    // استیت برای نمایش تقویم جدولی بازشونده در فرم
     const [showGridCalendar, setShowGridCalendar] = useState(false);
+    
+    // استیت جدید برای کنترل ماهی که در حال مشاهده آن هستیم
+    const [calendarMonthOffset, setCalendarMonthOffset] = useState(0);
 
-    // تولید خودکار روزهای ماه جاری شمسی برای جدول
+    // محاسبه ماه در حال نمایش
+    const currentViewedMonth = useMemo(() => {
+        return moment().add(calendarMonthOffset, 'jMonth');
+    }, [calendarMonthOffset]);
+
+    // تولید خودکار روزهای ماه بر اساس ماهی که در حال مشاهده هستیم
     const daysInCurrentJMonth = useMemo(() => {
-        const startOfMonth = moment().startOf('jMonth');
-        const totalDays = moment.jDaysInMonth(moment().jYear(), moment().jMonth());
+        const startOfMonth = currentViewedMonth.clone().startOf('jMonth');
+        const totalDays = moment.jDaysInMonth(currentViewedMonth.jYear(), currentViewedMonth.jMonth());
         const daysArray = [];
         
         for (let i = 0; i < totalDays; i++) {
@@ -56,7 +63,7 @@ export default function MainTabNavigator({ dark, setDark }) {
             });
         }
         return daysArray;
-    }, []);
+    }, [currentViewedMonth]);
 
     const timeOptions = ['بدون زمان', '۰۸:۰۰', '۱۰:۰۰', '۱۲:۰۰', '۱۵:۰۰', '۱۸:۰۰', '۲۰:۰۰', '۲۲:۰۰'];
 
@@ -73,13 +80,18 @@ export default function MainTabNavigator({ dark, setDark }) {
         return () => { if (currentBannerId) TapsellPlus.destroyStandardBannerAd(currentBannerId); };
     }, []);
 
+    const resetModal = () => {
+        setModalVisible(false);
+        setNewTaskTitle('');
+        setSelectedTime('بدون زمان');
+        setShowGridCalendar(false);
+        setCalendarMonthOffset(0); // بازگشت به ماه جاری برای دفعه بعد
+    };
+
     const handleSaveTask = () => {
         if (newTaskTitle.trim()) {
             addTodo(newTaskTitle, '', newTaskCat, newTaskPriority, selectedDate, selectedTime === 'بدون زمان' ? null : selectedTime);
-            setModalVisible(false);
-            setNewTaskTitle('');
-            setSelectedTime('بدون زمان');
-            setShowGridCalendar(false);
+            resetModal();
         }
     };
 
@@ -114,11 +126,11 @@ export default function MainTabNavigator({ dark, setDark }) {
                 </Tab.Screen>
             </Tab.Navigator>
 
-            <Modal animationType="slide" transparent={true} visible={isModalVisible} onRequestClose={() => setModalVisible(false)}>
+            <Modal animationType="slide" transparent={true} visible={isModalVisible} onRequestClose={resetModal}>
                 <View style={styles.modalOverlay}>
                     <View style={[styles.modalContent, { backgroundColor: colors.bgCard, maxHeight: screenHeight * 0.85 }]}>
                         <View style={styles.modalHeader}>
-                            <TouchableOpacity onPress={() => setModalVisible(false)}><Feather name="x" size={24} color={colors.textPrimary} /></TouchableOpacity>
+                            <TouchableOpacity onPress={resetModal}><Feather name="x" size={24} color={colors.textPrimary} /></TouchableOpacity>
                             <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>افزودن کار جدید</Text>
                             <View style={{ width: 24 }} />
                         </View>
@@ -130,7 +142,6 @@ export default function MainTabNavigator({ dark, setDark }) {
                                 style={[styles.modalInput, { backgroundColor: colors.bgApp, color: colors.textPrimary, borderColor: colors.border }]}
                             />
 
-                            {/* فیلد انتخاب تاریخ پیشرفته شبیه به تقویم‌های رسمی */}
                             <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>تاریخ انجام وظیفه:</Text>
                             <TouchableOpacity 
                                 onPress={() => setShowGridCalendar(!showGridCalendar)}
@@ -142,10 +153,23 @@ export default function MainTabNavigator({ dark, setDark }) {
                                 </Text>
                             </TouchableOpacity>
 
-                            {/* شبکه نمایش کل روزهای ماه جاری شمسی */}
+                            {/* شبکه نمایش کل روزها با قابلیت تغییر ماه */}
                             {showGridCalendar && (
                                 <View style={[styles.gridCalendarContainer, { borderColor: colors.border }]}>
-                                    <Text style={{ textAlign: 'center', fontSize: 13, color: colors.textMuted, marginBottom: 10 }}>{moment().format('jMMMM jYYYY')}</Text>
+                                    
+                                    {/* هدر تقویم برای تغییر ماه */}
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+                                        <TouchableOpacity onPress={() => setCalendarMonthOffset(prev => prev - 1)} style={{ padding: 5 }}>
+                                            <Feather name="chevron-right" size={20} color={colors.textPrimary} />
+                                        </TouchableOpacity>
+                                        <Text style={{ fontSize: 14, fontWeight: 'bold', color: colors.textPrimary }}>
+                                            {currentViewedMonth.format('jMMMM jYYYY')}
+                                        </Text>
+                                        <TouchableOpacity onPress={() => setCalendarMonthOffset(prev => prev + 1)} style={{ padding: 5 }}>
+                                            <Feather name="chevron-left" size={20} color={colors.textPrimary} />
+                                        </TouchableOpacity>
+                                    </View>
+
                                     <View style={styles.gridDaysWrapper}>
                                         {daysInCurrentJMonth.map((d, idx) => {
                                             const isSelected = selectedDate === d.timestamp;
